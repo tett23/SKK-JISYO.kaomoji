@@ -1,0 +1,65 @@
+;; -*- mode: fundamental; coding: utf-8 -*-
+;; SKK-JISYO.kaomoji.utf8 --- Japanese kaomoji (emoticon) dictionary for SKK
+;;
+;; Version: fixture
+;; 208 kaomoji, 19 readings.
+;; UTF-8 version.
+;;
+;; Copyright (c) 2026 はちがつうまれ
+;; Released under the MIT License. https://github.com/tett23/SKK-JISYO.kaomoji
+;;
+;; Kaomoji and readings are taken from Mozc (https://github.com/google/mozc),
+;; src/data/emoticon/emoticon.tsv and categorized.tsv at commit
+;; 85590f17409ebff387285f9665f362ede83ebd8e,
+;; distributed under the following license:
+;;
+;; Copyright 2010-2018, Google Inc.
+;; All rights reserved.
+;;
+;; Redistribution and use in source and binary forms, with or without
+;; modification, are permitted provided that the following conditions are
+;; met:
+;;
+;;   * Redistributions of source code must retain the above copyright
+;;     notice, this list of conditions and the following disclaimer.
+;;   * Redistributions in binary form must reproduce the above
+;;     copyright notice, this list of conditions and the following disclaimer
+;;     in the documentation and/or other materials provided with the
+;;     distribution.
+;;   * Neither the name of Google Inc. nor the names of its
+;;     contributors may be used to endorse or promote products derived from
+;;     this software without specific prior written permission.
+;;
+;; THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+;; "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+;; LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+;; A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+;; OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+;; SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+;; LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+;; DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+;; THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+;; (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+;; OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+;;
+;; okuri-ari entries.
+;; okuri-nasi entries.
+あせ /(concat "^^\073")/(concat "(^_^\073)")/(concat "(-_-\073)")/(concat "(・・\073)")/(concat "(・_・\073)")/(concat "(・・\073")/(concat "(・。・\073")/(；・∀・)/(；´∀｀)/(；´Д｀)/(concat "(^o^\073)")/(concat "(^o^\073")/(concat "(^.^\073")/(^^ゞ/（；^ω^）/（；＾ω＾）/(concat "(゜o゜\073")/(concat "(~_~\073)")/(concat "(~O~\073)")/(concat "(＠_＠\073)")/(concat "(*_*\073")/(concat "(ーー\073)")/(concat "(ー_ー\073)")/(concat "(_ _\073)")/(concat "m(_ _\073)m")/(concat "(\073´Д｀)ﾊｧﾊｧ")/(concat "(^O^\073)")/(；一_一)/Σ(´∀｀；)/Σ(・∀・；)/(concat "(・.・\073)")/(concat "(=o=\073)")/(concat "^_^\073")/(； ･`ω･´)/(； ･`д･´)/(´-﹏-`；)/(´ε｀；)ｳｰﾝ…/(ㆀ˘･з･˘)/(concat "( •̀ㅁ•́\073)")/(concat "(ﾟＡﾟ\073)ｺﾞｸﾘ")/(concat "(\073ﾟ∀ﾟ)=3ﾊｧﾊｧ")/(concat "(\073´д｀)ﾄﾎﾎ…")/(concat "(@@\073)")/
+あーん /(concat "(*´Д｀)")/
+うぇ /ヽ(ﾟ∀｡)ﾉｳｪ/
+うーん /(゜゜)/(゜-゜)/(゜_゜)/(゜.゜)/(゜レ゜)/(concat "(+_+)")/(concat "(+o+)")/(concat "((+_+))")/(｡･_･｡)/(｡ŏ﹏ŏ)/(concat "( ･ั﹏･ั)")/(･ัω･ั)/(´ε｀；)ｳｰﾝ…/（´-`）.｡oO/
+くちぶえ /♪～(´ε｀ )/
+ぐっ /(￣ー￣)ｂｸﾞｯ!/( ´∀｀)bｸﾞｯ!/(๑•̀ㅂ•́)و✧/
+しくしく /(concat "(T_T)")/(concat "(\073_\073)")/(concat "(ToT)")/(concat "(TT)")/(concat "(TдT)")/(concat "(TOT)")/(concat "(\073O\073)")/(concat "(\073_\073")/(concat "(\057_\073)")/(concat "(:_\073)")/(ﾉД`)ｼｸｼｸ/(concat "(\073_:)")/(　；∀；)/(concat "( ；∀；)")/(´Д⊂ヽ/(concat "\073-(")/(´；ω；｀)ｳｯ…/(´；ω；｀)ﾌﾞﾜｯ/｡ﾟ(ﾟ´Д｀ﾟ)ﾟ｡/｡･ﾟ･(ﾉД`)･ﾟ･｡/
+しょぼーん /(´・ω・｀)/(´・ω・`)/(´・ω・｀)ｼｮﾎﾞｰﾝ/(concat "(´・ω:\073.:...")/(´ . .̫ . `)/(๑´•.̫ • `๑)/
+じとっ /(concat "(-_-)")/(concat "(-_-\073)")/(concat "(-.-)")/(concat "(-.-\073)")/(concat "(ーー\073)")/(concat "(ー_ー\073)")/(ー_ー)/(；一_一)/(concat "( 一一)")/(ー_ー)!!/
+すくめる /(concat "¯\\_(ツ)_\057¯")/
+どうぶつ /(ΦωΦ)/(concat "(=^・^=)")/(concat "(=^・・^=)")/Ｃ:。ミ/くコ:彡/：8]/ʕ•ٹ•ʔ/ʕ•ӫ̫͡•ʔ/ʕº̫͡ºʔ/Uo･ｪ･oU/U^ｪ^U/（´(ｪ)｀）/（・(ｪ)・）/(concat "(*￣(ｴ)￣*)")/ʕ•̀ω•́ʔ✧/⊂ﾟＵ┬───┬~/
+なみだ /(concat "(T_T)")/(concat "(\073_\073)")/(´；ω；｀)/(concat "(ToT)")/(concat "(TT)")/(concat "(TдT)")/(concat "(TOT)")/(concat "(\073O\073)")/(concat "(\073_\073")/(concat "(\057_\073)")/(concat "(:_\073)")/(¯―¯٥)/(ﾉД`)ｼｸｼｸ/(concat "(\073_:)")/(　；∀；)/(concat "( ；∀；)")/(´Д⊂ヽ/(｀；ω；´)/(concat "\073-(")/(concat "(\073_\073)\057~~~")/(concat "( TДT)")/(´；ω；｀)ｳｯ…/(´；ω；｀)ﾌﾞﾜｯ/｡ﾟ(ﾟ´Д｀ﾟ)ﾟ｡/｡･ﾟ･(ﾉД`)･ﾟ･｡/｡･ﾟ･(ﾉ∀`)･ﾟ･｡/(´°̥̥̥̥̥̥̥̥ω°̥̥̥̥̥̥̥̥｀)/
+にこにこ /＼(^o^)／/(concat "(^o^)")/(concat "(^^)")/(concat "(*^^*)")/:D/(concat "^^\073")/(concat "(^O^)")/(concat "(^_^)")/(・∀・)/(concat "(*^_^*)")/(concat "(^_^\073)")/(^O^)／/(concat "(^○^)")/(concat "(^^)\057")/(concat "(^q^)")/(⌒▽⌒)/(concat "(^.^)")/(concat "\073)")/（＾ν＾）/(concat "(#^.^#)")/(concat "(#^^#)")/(concat "(^_-)")/(●´ω｀●)/(●´ϖ`●)/(concat "(^o^\073)")/(concat "(^.^\073")/(^^ゞ/(^^♪/(concat "(^。^)")/(concat "(^・^)")/(^o^)v/(^_^)v/(^^)v/(*^^)v/(concat "(*^。^*)")/（*^_^*）/（＾ｖ＾）/（＾◇＾）/（＾ｕ＾）/（ ＾ν＾）/（●＾o＾●）/(concat "(*ﾟ∀ﾟ)")/(^_-)-☆/(concat "(^_^)\057")/(^o^)／/(^o^)丿/ヽ(^o^)丿/!(^o^)!/ヽ(^。^)ノ/(concat "(=^･^=)")/(concat "(^_^.)")/(concat "(^O^\073)")/(concat "( ´∀｀)")/（ ﾟ∀ﾟ ）/(concat "(^0_0^)")/(concat "^_^\073")/^m^/＼(-o-)／/＼(~o~)／/(concat "(*‘ω‘ *)")/(concat "(o・ω・o)")/( ^ω^ )ﾆｺﾆｺ/(concat "( ^)o(^ )")/(concat "(^ム^)")/(concat "(^_^メ)")/
+ばくだん /●～*/
+ぶー /・３・/−３−/•́ε•̀٥/
+ぺこり /m(_ _)m/m(__)m/(concat "(._.)")/(concat "(_ _)")/(concat "(_ _\073)")/(concat "m(_ _\073)m")/_(_^_)_/_(._.)_/(concat "(__)")/
+まゆ /(　･ิω･ิ)/(･ิω･ิ)/(concat "( ･ิω･ิ)")/(concat "( ･ิϖ･ิ)")/(concat "( ･`ω･´)")/(； ･`д･´)/(concat "( ･`д･´)")/( ｰ`дｰ´)ｷﾘｯ/
+むか /(concat "(--)")/(・へ・)/٩(๑òωó๑)۶/٩(๑`^´๑)۶/（●｀ε´●）/(｀´）/(concat "(~_~メ)")/(concat "(-_-メ)")/(concat "(# ﾟДﾟ)")/(ーー゛)/(－－〆)/（#^ω^）/ヽ(｀Д´#)ﾉ/(concat "(^_^メ)")/
+もぐもぐ /(´～｀)ﾓｸﾞﾓｸﾞ/

@@ -1,5 +1,6 @@
-# Mozc のコミットと、取得するファイルの SHA-256（ADR 0001）。
+# Mozc のコミットと、取得するファイルの SHA-256（ADR 0001）。DDSKK のコミット（ADR 0002）。
 # 更新するときは、コミットとハッシュを両方書きかえる（README の「Mozc の更新」）。
 mozc_commit = 85590f17409ebff387285f9665f362ede83ebd8e
+ddskk_commit = e8bf68b27021c29781dbfa6a8ef7b770565bdb5b
 src/data/emoticon/emoticon.tsv = 366558b380bef07dda26822c9100d1efabee539f7961b2c6363d4614c4a762c4
 src/data/emoticon/categorized.tsv = 4497c16a706de418b05e73eaddbce13e5d3390e7c2de71200b28c0c97ae5c4fc
