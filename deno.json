@@ -7,8 +7,15 @@
         "fetch"
       ]
     },
-    "test": "deno test --allow-read tests/",
-    "notes": "deno run --allow-read scripts/release_notes.ts"
+    "test": {
+      "command": "deno test --allow-read tests/",
+      "dependencies": [
+        "fetch"
+      ]
+    },
+    "notes": "deno run --allow-read scripts/release_notes.ts",
+    "expected": "deno run --allow-read --allow-write scripts/expected.ts",
+    "euc-table": "deno run --allow-write scripts/euc_table.ts"
   },
   "fmt": {
     "lineWidth": 120,

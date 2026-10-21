@@ -3,6 +3,7 @@ import {
   buildEntries,
   candidateEucJp,
   candidateUtf8,
+  EMACS_MISMATCH,
   encodeEucJp,
   isEucJpEncodable,
   mergeKaomoji,
@@ -105,6 +106,25 @@ Deno.test("candidateEucJp", () => {
   assertEquals(candidateEucJp("(•ω•)"), '(concat "(\\u2022ω\\u2022)")');
 });
 
+Deno.test("candidateEucJp: characters Deno and Emacs map differently are \\uXXXX (ADR 0002)", () => {
+  assertEquals(candidateEucJp("♪～(´ε｀ )"), '(concat "♪\\uFF5E(´ε｀ )")');
+  assertEquals(candidateEucJp("(－－〆)"), '(concat "(\\uFF0D\\uFF0D〆)")');
+  assertEquals(candidateEucJp("(¯―¯٥)"), '(concat "(\\u00AF\\u2015\\u00AF\\u0665)")');
+  assertEquals(candidateEucJp("∥"), '(concat "\\u2225")');
+  assertEquals(candidateEucJp("￠"), '(concat "\\uFFE0")');
+  assertEquals(candidateEucJp("￡"), '(concat "\\uFFE1")');
+  assertEquals(candidateEucJp("￢"), '(concat "\\uFFE2")');
+  assertEquals(candidateEucJp("＼(^o^)／"), "＼(^o^)／");
+  assertEquals(candidateUtf8("♪～(´ε｀ )"), "♪～(´ε｀ )");
+});
+
+Deno.test("EMACS_MISMATCH is exactly the seven characters", () => {
+  assertEquals(
+    [...EMACS_MISMATCH].map((c) => c.codePointAt(0)!.toString(16).toUpperCase()).sort(),
+    ["2015", "2225", "FF0D", "FF5E", "FFE0", "FFE1", "FFE2"],
+  );
+});
+
 const meta = { version: "0.1.0", mozcCommit: "0123456789abcdef0123456789abcdef01234567" };
 const entries = new Map([["にこ", ["(^^)", "^_^"]], ["ぴーす", ["(^^)v"]], ["てれ", ["•ω•"]]]);
 
@@ -137,11 +157,13 @@ Deno.test("renderEucJp: sorted by EUC-JP bytes (ー sorts before hiragana)", () 
 Deno.test("parseSourcesLock", () => {
   const lock = `# comment
 mozc_commit = 0123456789abcdef0123456789abcdef01234567
+ddskk_commit = fedcba9876543210fedcba9876543210fedcba98
 src/data/emoticon/emoticon.tsv = ${"a".repeat(64)}
 src/data/emoticon/categorized.tsv = ${"b".repeat(64)}
 `;
   assertEquals(parseSourcesLock(lock), {
     mozcCommit: "0123456789abcdef0123456789abcdef01234567",
+    ddskkCommit: "fedcba9876543210fedcba9876543210fedcba98",
     files: new Map([
       ["src/data/emoticon/emoticon.tsv", "a".repeat(64)],
       ["src/data/emoticon/categorized.tsv", "b".repeat(64)],

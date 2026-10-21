@@ -1,6 +1,6 @@
 # ADR 0001: Mozc の顔文字データから SKK 辞書を生成する
 
-ステータス: 採択
+ステータス: 採択→EUC-JP 版の候補の書き方の一部は [ADR 0002](0002-check-dictionaries-with-ddskk.md)
 
 ## 文脈
 

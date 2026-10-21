@@ -30,6 +30,16 @@ jobs:
           path: dist/
           if-no-files-found: error
 
+  ddskk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/cache@v6
+        with:
+          path: .cache
+          key: ddskk-${{ hashFiles('sources.lock') }}
+      - run: scripts/check_ddskk_docker.sh
+
   adr:
     runs-on: ubuntu-latest
     steps:

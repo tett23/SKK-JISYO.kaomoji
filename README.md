@@ -16,11 +16,10 @@
 | ファイル | 文字コード | 候補の書き方 |
 |---|---|---|
 | `SKK-JISYO.kaomoji.utf8` | UTF-8 | 顔文字そのもの |
-| `SKK-JISYO.kaomoji` | EUC-JP | 顔文字そのもの。JIS X 0208 にない文字を含む顔文字は `(concat "\uXXXX")` の式 |
+| `SKK-JISYO.kaomoji` | EUC-JP | 顔文字そのもの。JIS X 0208 にない文字や、Emacs が別の文字として読む 7 文字（`～`、`－`、`―` など）を含む顔文字は `(concat "\uXXXX")` の式 |
 
 - EUC-JP 版で式になっている顔文字（`•`、`๑`、`✧` などを含むもの）を変換できるのは DDSKK（Emacs）だけです。
 - AquaSKK、macSKK、libskk、fcitx5-skk、skkeleton などでは UTF-8 版を使ってください。
-- EUC-JP 版を DDSKK で使うと、`～`、`－`、`―` を含む 5 件の顔文字が、見た目のよく似た別の文字（`〜`、`−`、`—`）になります。UTF-8 版ではこの問題は起きません。[ADR 0002](docs/adr/0002-check-dictionaries-with-ddskk.md) で直し方を決めました（未実装）。
 - `/`、`;` を含む顔文字と、`(^^)` のように `(` と ASCII の文字で始まり `)` で終わる顔文字は、`(concat "...")` の形で書いてあります。
   多くの SKK の実装は `concat` を解釈するので、変換の結果は顔文字そのものになります。
 
@@ -28,10 +27,14 @@
 
 ```elisp
 ;; EUC-JP 版
-(add-to-list 'skk-extra-jisyo-list "~/path/to/SKK-JISYO.kaomoji")
+(add-to-list 'skk-extra-jisyo-file-list "~/path/to/SKK-JISYO.kaomoji")
 ;; UTF-8 版（文字コードを指定する）
-(add-to-list 'skk-extra-jisyo-list '("~/path/to/SKK-JISYO.kaomoji.utf8" . utf-8))
+(add-to-list 'skk-extra-jisyo-file-list '("~/path/to/SKK-JISYO.kaomoji.utf8" . utf-8))
 ```
+
+DDSKK では EUC-JP 版を勧めます。
+UTF-8 版の見出し語は、libskk（fcitx5-skk、ibus-skk）に合わせて UTF-8 のバイト順に並べており、DDSKK が探すときの順とは違います。
+今の大きさなら DDSKK でも UTF-8 版の全件を引けることを、CI で確かめています（[ADR 0003](docs/adr/0003-match-ddskk-check-to-real-lookups.md)）。
 
 ## 候補の並び順
 
@@ -60,9 +63,8 @@ deno task test
 
 ### DDSKK での検査
 
-[ADR 0002](docs/adr/0002-check-dictionaries-with-ddskk.md) で採択しましたが、まだ実装していないので使えません。
-
-生成した 2 つの辞書を DDSKK で実際に引き、すべての見出し語の候補が正しく出るかを確かめます。
+生成した 2 つの辞書を DDSKK で実際に引き、すべての見出し語の候補が正しく出るか、見出し語が正しい順に並んでいるかを確かめます（[ADR 0002](docs/adr/0002-check-dictionaries-with-ddskk.md)、[ADR 0003](docs/adr/0003-match-ddskk-check-to-real-lookups.md)）。
+CI とリリースでも同じ検査をします。
 Docker があれば、次の 1 行で Deno、Emacs、DDSKK の入ったイメージを作り、その中で検査します。
 
 ```bash
