@@ -1,5 +1,5 @@
 /**
- * 顔文字の SKK 辞書を作るための純粋な関数（ADR 0001、ADR 0004）。
+ * 顔文字の SKK 辞書を作るための純粋な関数（ADR 0001、ADR 0004、ADR 0005）。
  * ファイルやネットワークの入出力は scripts/*.ts の import.meta.main の中だけで行う。
  */
 
@@ -101,6 +101,16 @@ export function mergeKaomoji(list: Kaomoji[]): Kaomoji[] {
 }
 
 export type Entries = Map<string, string[]>;
+
+/** 辞書の見出し語の規則。読み（ひらがなと「ー」）か、その先頭に半角の `!` を 1 つ付けたもの（ADR 0005）。 */
+export const isHeadword = (s: string) => /^!?[ぁ-ゖー]+$/.test(s);
+
+/**
+ * すべての見出し語について、先頭に `!` を付けた見出し語を同じ候補で足す（ADR 0005）。
+ * `!` を付けて変換すると、ほかの辞書の候補が混ざらず顔文字だけが並ぶ。元の Map は変えない。
+ */
+export const withBangHeadwords = (entries: Entries): Entries =>
+  new Map([...entries, ...[...entries].map(([r, cands]) => [`!${r}`, cands] as const)]);
 
 /**
  * 見出し語 → 候補（並び順どおり）。候補はデータの並びの順（ADR 0004）。
