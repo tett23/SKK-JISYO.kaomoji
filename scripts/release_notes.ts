@@ -69,9 +69,11 @@ export function notes(args: Ctx & { prevTag?: string; commits: Commit[]; reading
     "| File | Description |",
     "|---|---|",
     '| `SKK-JISYO.kaomoji` | EUC-JP. Kaomoji outside JIS X 0208 are Emacs Lisp `(concat "\\uXXXX")` forms (DDSKK only) |',
-    "| `SKK-JISYO.kaomoji.utf8` | UTF-8 (AquaSKK, macSKK, libskk, skkeleton, DDSKK, ...) |",
+    "| `SKK-JISYO.kaomoji.utf8` | UTF-8 (AquaSKK, macSKK, libskk, skkeleton, ...). Use the EUC-JP version with DDSKK |",
     "| `LICENSE` | License of this dictionary (MIT License) |",
     "| `LICENSE-Mozc.txt` | License of the kaomoji and readings taken from Mozc (BSD 3-Clause License) |",
+    "| `LICENSE-kaomoji-data.txt` | License of the kaomoji and readings taken from kaomojikan/kaomoji-data (MIT License) |",
+    "| `LICENSE-emoticon.txt` | License of the kaomoji and readings taken from tiwanari/emoticon (MIT License) |",
     "| `SHA256SUMS` | SHA-256 checksums |",
     "",
   ].join("\n");

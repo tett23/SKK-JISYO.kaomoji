@@ -1,6 +1,6 @@
 ;;; check_ddskk.el --- Check SKK-JISYO.kaomoji with DDSKK  -*- lexical-binding: t; coding: utf-8 -*-
 
-;; ADR 0002 and ADR 0003.  Run with:
+;; ADR 0002, ADR 0003 and ADR 0004.  Run with:
 ;;
 ;;   emacs --batch -Q -L <DDSKK> -l scripts/check_ddskk.el \
 ;;     --eval '(kaomoji-check "dist/SKK-JISYO.kaomoji" (quote euc-jp) ".cache/check/expected.tsv")'
@@ -53,24 +53,27 @@
         (forward-line 1))
       (nreverse headwords))))
 
-(defun kaomoji-check--lookup (dict coding reading)
+(defun kaomoji-check--lookup (dict coding reading limit)
   "Candidates of READING in DICT as DDSKK shows them.
-Searches with `kaomoji-check-limit', as DDSKK does, and evaluates each candidate
+Searches with LIMIT (DDSKK uses `kaomoji-check-limit') and evaluates each candidate
 with `skk-eval-string', as DDSKK does before showing it."
   (let ((skk-henkan-key reading))
     (mapcar #'skk-eval-string
-            (skk-search-jisyo-file (cons dict coding) kaomoji-check-limit 'nomsg))))
+            (skk-search-jisyo-file (cons dict coding) limit 'nomsg))))
 
 (defun kaomoji-check--show (strings)
   (mapconcat (lambda (s) (format "%S" s)) strings " "))
 
-(defun kaomoji-check (dict coding expected)
-  "Check DICT read with CODING against the EXPECTED TSV, then exit Emacs."
-  (let ((rows (mapcar (lambda (line) (split-string line "\t"))
+(defun kaomoji-check (dict coding expected &optional limit)
+  "Check DICT read with CODING against the EXPECTED TSV, then exit Emacs.
+LIMIT defaults to `kaomoji-check-limit'.  Pass 0 (linear search only) for
+the UTF-8 version, whose UTF-8 byte order is not DDSKK's order (ADR 0004)."
+  (let ((limit (or limit kaomoji-check-limit))
+        (rows (mapcar (lambda (line) (split-string line "\t"))
                       (kaomoji-check--lines expected)))
         (failures 0))
     (dolist (row rows)
-      (let ((actual (kaomoji-check--lookup dict coding (car row))))
+      (let ((actual (kaomoji-check--lookup dict coding (car row) limit)))
         (unless (equal actual (cdr row))
           (setq failures (1+ failures))
           (message "MISMATCH %s\n  expected: %s\n  actual:   %s"
@@ -79,7 +82,8 @@ with `skk-eval-string', as DDSKK does before showing it."
       (unless (= entries (length rows))
         (setq failures (1+ failures))
         (message "ENTRY COUNT %s has %d entries, expected %d" dict entries (length rows))))
-    (princ (format "%s (%s): checked %d readings, %d failure(s)\n" dict coding (length rows) failures))
+    (princ (format "%s (%s, limit %d): checked %d readings, %d failure(s)\n"
+                   dict coding limit (length rows) failures))
     (kill-emacs (if (zerop failures) 0 1))))
 
 (defun kaomoji-check--less-p (order a b)

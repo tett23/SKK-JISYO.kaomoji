@@ -36,7 +36,9 @@ jobs:
 
       - name: Checksums
         working-directory: dist
-        run: sha256sum SKK-JISYO.kaomoji SKK-JISYO.kaomoji.utf8 LICENSE LICENSE-Mozc.txt > SHA256SUMS
+        run: >-
+          sha256sum SKK-JISYO.kaomoji SKK-JISYO.kaomoji.utf8
+          LICENSE LICENSE-Mozc.txt LICENSE-kaomoji-data.txt LICENSE-emoticon.txt > SHA256SUMS
 
       - name: Release notes
         env:
@@ -56,4 +58,5 @@ jobs:
           flags=""
           case "$GITHUB_REF_NAME" in *-*) flags="--prerelease" ;; esac
           gh release create "$GITHUB_REF_NAME" $flags --title "$GITHUB_REF_NAME" --notes-file notes.md \
-            dist/SKK-JISYO.kaomoji dist/SKK-JISYO.kaomoji.utf8 dist/LICENSE dist/LICENSE-Mozc.txt dist/SHA256SUMS
+            dist/SKK-JISYO.kaomoji dist/SKK-JISYO.kaomoji.utf8 dist/LICENSE dist/LICENSE-Mozc.txt \
+            dist/LICENSE-kaomoji-data.txt dist/LICENSE-emoticon.txt dist/SHA256SUMS
