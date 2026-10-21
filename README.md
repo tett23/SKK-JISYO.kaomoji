@@ -27,9 +27,9 @@
 
 ```elisp
 ;; EUC-JP 版
-(add-to-list 'skk-extra-jisyo-list "~/path/to/SKK-JISYO.kaomoji")
+(add-to-list 'skk-extra-jisyo-file-list "~/path/to/SKK-JISYO.kaomoji")
 ;; UTF-8 版（文字コードを指定する）
-(add-to-list 'skk-extra-jisyo-list '("~/path/to/SKK-JISYO.kaomoji.utf8" . utf-8))
+(add-to-list 'skk-extra-jisyo-file-list '("~/path/to/SKK-JISYO.kaomoji.utf8" . utf-8))
 ```
 
 ## 候補の並び順
