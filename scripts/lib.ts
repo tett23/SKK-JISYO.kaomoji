@@ -217,7 +217,14 @@ export function compareBytes(a: Uint8Array, b: Uint8Array): number {
 /** DDSKK の skk-lisp-prog-p が Lisp の式とみなしうる形（`(` + ASCII の文字で始まり `)` で終わる）。 */
 const looksLikeLisp = (s: string) => s.length > 2 && s[0] === "(" && s.charCodeAt(1) < 0x80 && s.endsWith(")");
 
-const needsConcat = (s: string) => /[/;]/.test(s) || looksLikeLisp(s);
+/** SKK の辞書の区切り（`/` と `;`）を含むか。含めば、どの版でも `(concat "...")` の形にする。 */
+const hasSeparator = (s: string) => /[/;]/.test(s);
+
+/** EUC-JP 版（DDSKK 用）で `(concat "...")` の形にするか。区切りを含むか、DDSKK が式とみなしうる形（ADR 0001）。 */
+const needsConcatForDdskk = (s: string) => hasSeparator(s) || looksLikeLisp(s);
+
+/** libskk が `(` で始まる候補として評価する関数（`libskk/expr.vala`）。この名前で始まる顔文字は別の文字列に化ける。 */
+const LIBSKK_FUNCTION = /^\((concat|current-time-string|pwd|skk-version)[\s)]/;
 
 /** Emacs Lisp の文字列リテラルの中身。escapeChar が文字を返せばそれを使う。 */
 const lispString = (s: string, escapeChar: (c: string) => string | undefined = () => undefined) =>
@@ -236,7 +243,16 @@ const lispString = (s: string, escapeChar: (c: string) => string | undefined = (
     }
   }).join("");
 
-export const candidateUtf8 = (s: string) => needsConcat(s) ? `(concat "${lispString(s)}")` : s;
+const concat = (s: string) => `(concat "${lispString(s)}")`;
+
+/**
+ * UTF-8 版の候補（ADR 0006）。区切りを含むときだけ `(concat "...")` の形にし、DDSKK のためだけには包まない。
+ * libskk が評価する関数の名前で始まる顔文字は、別の文字列に化けるので受け付けない。
+ */
+export function candidateUtf8(s: string): string {
+  if (LIBSKK_FUNCTION.test(s)) throw new Error(`libskk would evaluate this kaomoji: ${s}`);
+  return hasSeparator(s) ? concat(s) : s;
+}
 
 const uEscape = (c: string) => `\\u${c.codePointAt(0)!.toString(16).toUpperCase().padStart(4, "0")}`;
 const lispCharEscape = (c: string) => {
@@ -249,7 +265,7 @@ const isEucJpSafe = (c: string) => isEucJpEncodable(c) && !EMACS_MISMATCH.has(c)
 
 export const candidateEucJp = (s: string) =>
   [...s].every(isEucJpSafe)
-    ? candidateUtf8(s)
+    ? (needsConcatForDdskk(s) ? concat(s) : s)
     : `(concat "${lispString(s, (c) => isEucJpSafe(c) ? undefined : lispCharEscape(c))}")`;
 
 // ---------------------------------------------------------------- 辞書の出力
