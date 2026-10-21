@@ -1,6 +1,13 @@
-# Mozc のコミットと、取得するファイルの SHA-256（ADR 0001）。DDSKK のコミット（ADR 0002）。
-# 更新するときは、コミットとハッシュを両方書きかえる（README の「Mozc の更新」）。
+# 取り込むデータのコミットと、取得するファイルの SHA-256（ADR 0001、ADR 0004）。DDSKK のコミット（ADR 0002）。
+# `<名前>_commit` はコミット、`<名前>:<パス>` はファイルの SHA-256。
+# 更新するときは、コミットとハッシュを両方書きかえる（README の「取り込むデータの更新」）。
 mozc_commit = 85590f17409ebff387285f9665f362ede83ebd8e
+kaomoji_data_commit = 60c92ea4e85279ad42ff525e9a40464ebeb1003e
+emoticon_commit = 3df8debd54eab6c6510fdd05e0ebc7773b4e3170
 ddskk_commit = e8bf68b27021c29781dbfa6a8ef7b770565bdb5b
-src/data/emoticon/emoticon.tsv = 366558b380bef07dda26822c9100d1efabee539f7961b2c6363d4614c4a762c4
-src/data/emoticon/categorized.tsv = 4497c16a706de418b05e73eaddbce13e5d3390e7c2de71200b28c0c97ae5c4fc
+mozc:src/data/emoticon/emoticon.tsv = 366558b380bef07dda26822c9100d1efabee539f7961b2c6363d4614c4a762c4
+mozc:src/data/emoticon/categorized.tsv = 4497c16a706de418b05e73eaddbce13e5d3390e7c2de71200b28c0c97ae5c4fc
+kaomoji_data:kaomoji.json = 22721e1b31d60fee5a9bd9f26c8639ab4efee2e6c01cec3f674f0e0d1d3aea2b
+kaomoji_data:LICENSE = 08cb2c981c94a80ef0b80be68cdec72e54faa8d81c96e3476a23955eb9ba8a3b
+emoticon:source.txt = 2cd833f39fa0ed2019923bde3bf35d8779a14523b8f961357bec752cbe7efd27
+emoticon:LICENSE.md = 9ea29f6a7796e515d3b6b0c9a24293ff2016a97e9bb92f800a7fd7af9d69fbee
