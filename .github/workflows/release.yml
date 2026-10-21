@@ -1,0 +1,57 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - uses: actions/cache@v6
+        with:
+          path: .cache
+          key: sources-${{ hashFiles('sources.lock') }}
+
+      - name: Check that the tag matches VERSION
+        run: |
+          test "${GITHUB_REF_NAME#v}" = "$(cat VERSION)" || {
+            echo "tag ${GITHUB_REF_NAME} does not match VERSION $(cat VERSION)" >&2
+            exit 1
+          }
+
+      - run: deno task test
+      - run: deno task build --strict
+
+      - name: Checksums
+        working-directory: dist
+        run: sha256sum SKK-JISYO.kaomoji SKK-JISYO.kaomoji.utf8 LICENSE LICENSE-Mozc.txt > SHA256SUMS
+
+      - name: Release notes
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          prev=$(gh release list --exclude-drafts --json tagName,createdAt \
+                   --jq "map(select(.tagName != \"${GITHUB_REF_NAME}\")) | sort_by(.createdAt) | last | .tagName // empty")
+          if [ -n "$prev" ]; then range="$prev..$GITHUB_REF_NAME"; else range="$GITHUB_REF_NAME"; fi
+          git log --no-merges --format='%H%x09%s' "$range" > commits.tsv
+          deno task notes --tag "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --commits commits.tsv \
+            --dict dist/SKK-JISYO.kaomoji.utf8 --prev-tag "$prev" > notes.md
+
+      - name: Create release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          flags=""
+          case "$GITHUB_REF_NAME" in *-*) flags="--prerelease" ;; esac
+          gh release create "$GITHUB_REF_NAME" $flags --title "$GITHUB_REF_NAME" --notes-file notes.md \
+            dist/SKK-JISYO.kaomoji dist/SKK-JISYO.kaomoji.utf8 dist/LICENSE dist/LICENSE-Mozc.txt dist/SHA256SUMS
