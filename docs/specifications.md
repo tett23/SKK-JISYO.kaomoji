@@ -12,7 +12,7 @@
 | [ADR 0003](adr/0003-match-ddskk-check-to-real-lookups.md) | 採択 | DDSKK による検査を、DDSKK の実際の辞書の引き方に合わせる |
 | [ADR 0004](adr/0004-import-kaomoji-data-and-emoticon.md) | 採択 | kaomoji-data と tiwanari/emoticon の顔文字を取り込む |
 | [ADR 0005](adr/0005-bang-prefixed-headwords.md) | 採択 | `!` を先頭に付けた見出し語で、顔文字だけを候補に出す |
-| [ADR 0006](adr/0006-unwrap-lisp-like-kaomoji-in-utf8.md) | 採択 | UTF-8 版では、DDSKK のためだけに `(concat "...")` で包まない（未実装） |
+| [ADR 0006](adr/0006-unwrap-lisp-like-kaomoji-in-utf8.md) | 採択 | UTF-8 版では、DDSKK のためだけに `(concat "...")` で包まない |
 
 ## 配布物
 
@@ -74,17 +74,24 @@
 
 ## 候補の書き方
 
-次のどれかに当たる候補は `(concat "...")` の形にする。
+次のどれかに当たる候補は `(concat "...")` の形にする。版によって条件が違う（[ADR 0006](adr/0006-unwrap-lisp-like-kaomoji-in-utf8.md)）。
 
-- `/` か `;` を含む。`/` は `\057`、`;` は `\073` にする（SKK-JISYO.L と同じ書き方）
-- `(` で始まり、2 文字目が ASCII で、`)` で終わる（`(^^)` など）。DDSKK の `skk-lisp-prog-p` が Lisp の式とみなし、
-  先頭の要素が関数なら評価して置きかえてしまうのを防ぐ
+- 両方の版: `/` か `;` を含む。`/` は `\057`、`;` は `\073` にする（SKK-JISYO.L と同じ書き方）
+- EUC-JP 版だけ: `(` で始まり、2 文字目が ASCII で、`)` で終わる（`(^^)` など）。DDSKK の `skk-lisp-prog-p` が Lisp の式とみなし、
+  先頭の要素が関数なら評価して置きかえてしまうのを防ぐ。
+  UTF-8 版は DDSKK では使わない（「DDSKK と UTF-8 版」）ので、包まずに顔文字をそのまま書く
 - EUC-JP 版で、JIS X 0208（NEC 特殊文字と IBM 拡張を除く）と JIS X 0201 のカナで表せない文字を含む。
   表せない文字だけを `\uXXXX`（BMP の外は `\UXXXXXXXX`）にする
 - EUC-JP 版で、Deno（WHATWG）と Emacs とで EUC-JP の対応表が違う 7 文字（U+2015 `―`、U+FF5E `～`、U+2225 `∥`、U+FF0D `－`、U+FFE0 `￠`、U+FFE1 `￡`、U+FFE2 `￢`）を含む。
   これらの文字も `\uXXXX` にする（[ADR 0002](adr/0002-check-dictionaries-with-ddskk.md)）。そのまま書くと、DDSKK では `—`、`〜`、`‖`、`−`、`¢`、`£`、`¬` として読まれる
 
 `concat` の文字列の中では、`"` を `\"`、`\` を `\\` にする。空白はそのまま書く。
+
+UTF-8 版で、顔文字が `(` に続けて libskk が評価する関数の名前（`concat`、`current-time-string`、`pwd`、`skk-version`）と空白か `)` で始まるときは、`deno task build` が失敗する。
+libskk が評価して別の文字列にするのを防ぐためである（[ADR 0006](adr/0006-unwrap-lisp-like-kaomoji-in-utf8.md)）。
+
+AquaSKK は `(concat "...")` を評価しないので、UTF-8 版の `/` か `;` を含む顔文字（2026-10-21 の辞書で 155 件）は、AquaSKK では式のまま表示される。
+`(concat "...")` は SKK の辞書の標準の書き方（DDSKK のマニュアルの「辞書の書式」、SKK-JISYO.L）なので、辞書の側では対処せず、AquaSKK の本家に報告する
 
 ## 辞書の形式
 
