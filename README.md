@@ -20,6 +20,7 @@
 
 - EUC-JP 版で式になっている顔文字（`•`、`๑`、`✧` などを含むもの）を変換できるのは DDSKK（Emacs）だけです。
 - AquaSKK、macSKK、libskk、fcitx5-skk、skkeleton などでは UTF-8 版を使ってください。
+- EUC-JP 版を DDSKK で使うと、`～`、`－`、`―` を含む 5 件の顔文字が、見た目のよく似た別の文字（`〜`、`−`、`—`）になります。UTF-8 版ではこの問題は起きません。[ADR 0002](docs/adr/0002-check-dictionaries-with-ddskk.md) で直し方を決めました（未実装）。
 - `/`、`;` を含む顔文字と、`(^^)` のように `(` と ASCII の文字で始まり `)` で終わる顔文字は、`(concat "...")` の形で書いてあります。
   多くの SKK の実装は `concat` を解釈するので、変換の結果は顔文字そのものになります。
 
@@ -55,6 +56,23 @@ Mozc のデータは `sources.lock` に固定したコミットから `.cache/` 
 
 ```bash
 deno task test
+```
+
+### DDSKK での検査
+
+[ADR 0002](docs/adr/0002-check-dictionaries-with-ddskk.md) で採択しましたが、まだ実装していないので使えません。
+
+生成した 2 つの辞書を DDSKK で実際に引き、すべての見出し語の候補が正しく出るかを確かめます。
+Docker があれば、次の 1 行で Deno、Emacs、DDSKK の入ったイメージを作り、その中で検査します。
+
+```bash
+scripts/check_ddskk_docker.sh
+```
+
+Docker を使わない場合は、Deno と Emacs を入れ、`sources.lock` の `ddskk_commit` の DDSKK を取得してから、そのディレクトリを指定して実行します。
+
+```bash
+DDSKK_DIR=~/src/ddskk scripts/check_ddskk.sh
 ```
 
 ### 顔文字を足す
