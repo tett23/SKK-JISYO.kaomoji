@@ -143,8 +143,10 @@ Deno.test("candidateUtf8", () => {
   assertEquals(candidateUtf8("^^;"), '(concat "^^\\073")');
   assertEquals(candidateUtf8("¯\\_(ツ)_/¯"), '(concat "¯\\\\_(ツ)_\\057¯")');
   assertEquals(candidateUtf8('(^"^)/'), '(concat "(^\\"^)\\057")');
-  assertEquals(candidateUtf8("(^^)"), '(concat "(^^)")');
-  assertEquals(candidateUtf8("(-)"), '(concat "(-)")');
+  // ADR 0006: the UTF-8 version does not wrap lisp-like kaomoji only for DDSKK
+  assertEquals(candidateUtf8("(^^)"), "(^^)");
+  assertEquals(candidateUtf8("(-)"), "(-)");
+  assertEquals(candidateUtf8("((+_+))"), "((+_+))");
   assertEquals(candidateUtf8("(´・ω・`)"), "(´・ω・`)");
   assertEquals(candidateUtf8("^_^"), "^_^");
   assertEquals(candidateUtf8("・ω・ ・ω・"), "・ω・ ・ω・");
@@ -165,6 +167,9 @@ Deno.test("EUC-JP encoder", () => {
 Deno.test("candidateEucJp", () => {
   assertEquals(candidateEucJp("•ω•♡"), '(concat "\\u2022ω\\u2022\\u2661")');
   assertEquals(candidateEucJp("(´・ω・`)"), "(´・ω・`)");
+  // the EUC-JP version (for DDSKK) still wraps lisp-like kaomoji (ADR 0001)
+  assertEquals(candidateEucJp("(^^)"), '(concat "(^^)")');
+  assertEquals(candidateEucJp("(-)"), '(concat "(-)")');
   assertEquals(candidateEucJp("(^^)/"), '(concat "(^^)\\057")');
   assertEquals(candidateEucJp("(•ω•)"), '(concat "(\\u2022ω\\u2022)")');
 });
@@ -214,7 +219,7 @@ Deno.test("renderUtf8", () => {
   // UTF-8 byte order: ぴ(E381B4) < て(E381A6)? no: て < に < ぴ
   assertEquals(
     text.split(";; okuri-ari entries.\n;; okuri-nasi entries.\n")[1],
-    'てれ /•ω•/\nにこ /(concat "(^^)")/^_^/\nぴーす /(^^)v/\n',
+    "てれ /•ω•/\nにこ /(^^)/^_^/\nぴーす /(^^)v/\n",
   );
 });
 
@@ -306,4 +311,12 @@ Deno.test("the header counts !-prefixed headwords (ADR 0005)", () => {
   const e = withBangHeadwords(new Map([["にこ", ["A"]], ["あせ", ["B"]]]));
   const text = new TextDecoder().decode(renderUtf8(meta, e, 2));
   assertEquals(text.includes(";; 2 kaomoji, 4 readings.\n"), true);
+});
+
+Deno.test("candidateUtf8 rejects kaomoji that libskk would evaluate (ADR 0006)", () => {
+  for (const k of ["(pwd)", '(concat "x")', "(skk-version)", "(current-time-string)", "(pwd )"]) {
+    assertThrows(() => candidateUtf8(k), Error, undefined, k);
+  }
+  assertEquals(candidateUtf8("(pwdx)"), "(pwdx)");
+  assertEquals(candidateUtf8("(concatenate)"), "(concatenate)");
 });
