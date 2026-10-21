@@ -1,12 +1,22 @@
 /**
- * dist/ に辞書とライセンスファイルを作る（ADR 0001、ADR 0004）。
+ * dist/ に辞書とライセンスファイルを作る（ADR 0001、ADR 0004、ADR 0005）。
  *
  *   deno task build [--strict]
  *
  * 捨てた読みは警告として標準エラーに出す。--strict を付けると、data/extra.tsv（このリポジトリで書くデータ）の
  * 警告があれば失敗する。外部のデータの警告では失敗しない。
  */
-import { buildEntries, type Credit, EUC_JP_FILE, MOZC_NOTICE, renderEucJp, renderUtf8, UTF8_FILE } from "./lib.ts";
+import {
+  buildEntries,
+  type Credit,
+  EUC_JP_FILE,
+  isHeadword,
+  MOZC_NOTICE,
+  renderEucJp,
+  renderUtf8,
+  UTF8_FILE,
+  withBangHeadwords,
+} from "./lib.ts";
 import { loadSources } from "./sources.ts";
 
 const OUT = "dist";
@@ -23,7 +33,11 @@ if (import.meta.main) {
   const strict = Deno.args.includes("--strict");
   const { sources, credits } = await loadSources();
   const meta = { version: (await Deno.readTextFile("VERSION")).trim(), credits };
-  const { entries, warnings, strictFailures, kaomojiCount } = buildEntries(sources);
+  const built = buildEntries(sources);
+  const { warnings, strictFailures, kaomojiCount } = built;
+  const entries = withBangHeadwords(built.entries);
+  const invalid = [...entries.keys()].filter((r) => !isHeadword(r));
+  if (invalid.length > 0) throw new Error(`invalid headwords: ${invalid.join(" ")}`);
   for (const w of warnings) console.error(`warning: ${w}`);
 
   const [mozc, kaomojiData, emoticon] = credits as [Credit, Credit, Credit];

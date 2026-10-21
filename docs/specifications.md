@@ -11,7 +11,7 @@
 | [ADR 0002](adr/0002-check-dictionaries-with-ddskk.md) | 採択 | 生成した辞書を DDSKK で引いて検査し、EUC-JP の対応表の違いを直す（Docker の環境を含む） |
 | [ADR 0003](adr/0003-match-ddskk-check-to-real-lookups.md) | 採択 | DDSKK による検査を、DDSKK の実際の辞書の引き方に合わせる |
 | [ADR 0004](adr/0004-import-kaomoji-data-and-emoticon.md) | 採択 | kaomoji-data と tiwanari/emoticon の顔文字を取り込む |
-| [ADR 0005](adr/0005-bang-prefixed-headwords.md) | 採択 | `!` を先頭に付けた見出し語で、顔文字だけを候補に出す（未実装） |
+| [ADR 0005](adr/0005-bang-prefixed-headwords.md) | 採択 | `!` を先頭に付けた見出し語で、顔文字だけを候補に出す |
 
 ## 配布物
 
@@ -52,6 +52,13 @@
   `deno task build --strict` は、`data/extra.tsv` の読みの警告だけを失敗にする。外部のデータの警告では失敗しない（[ADR 0004](adr/0004-import-kaomoji-data-and-emoticon.md)）
 - 読みが 1 つも残らなかった顔文字は、辞書に入らない。ヘッダーとリリースノートの顔文字の数は、辞書に入った顔文字の数である
 - 送り仮名のある見出し語、英字の見出し語は作らない
+- すべての見出し語について、先頭に半角の `!` を付けた見出し語（`!にこにこ` など）も作り、元の見出し語と同じ候補を同じ順に並べる（[ADR 0005](adr/0005-bang-prefixed-headwords.md)）。
+  ほかの辞書には `!` にかなが続く見出し語が無いので、`!` を付けて変換すると顔文字だけが並ぶ
+  - 見出し語の規則は、ひらがなと `ー` だけのもの、またはその先頭に `!` を 1 つ付けたもの。`deno task build` は、規則に合わない見出し語があれば失敗する
+  - `!` は辞書を出力する直前に足す（`withBangHeadwords`）。`data/extra.tsv` や取り込むデータの読みには書かない
+  - 全角の `！` を付けた見出し語は作らない
+  - ヘッダーとリリースノートの見出し語の数は、`!` の付いた見出し語を含めた数である
+  - DDSKK と AquaSKK では、`Q` で▽モードを始めて `!` と読みを入力する。skkeleton は `!` を全角の `！` に変えるので引けない。libskk と macSKK は確かめていない
 
 ## 候補の並び順
 

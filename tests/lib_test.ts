@@ -6,6 +6,7 @@ import {
   EMACS_MISMATCH,
   encodeEucJp,
   isEucJpEncodable,
+  isHeadword,
   mergeKaomoji,
   MOZC_NOTICE,
   normalizeReading,
@@ -17,6 +18,7 @@ import {
   parseSourcesLock,
   renderEucJp,
   renderUtf8,
+  withBangHeadwords,
 } from "../scripts/lib.ts";
 
 const hex = (b: Uint8Array) => [...b].map((x) => x.toString(16).toUpperCase().padStart(2, "0")).join("");
@@ -265,4 +267,43 @@ emoticon:LICENSE.md = ${"c".repeat(64)}
   });
   assertThrows(() => parseSourcesLock(`unknown:x = ${"d".repeat(64)}\n`));
   assertThrows(() => parseSourcesLock(`unknown_commit = ${"d".repeat(40)}\n`));
+});
+
+Deno.test("withBangHeadwords adds !-prefixed headwords with the same candidates (ADR 0005)", () => {
+  const original = new Map([["にこ", ["(^^)", "^_^"]], ["あせ", ["^^;"]]]);
+  const withBang = withBangHeadwords(original);
+  assertEquals(withBang.get("!にこ"), ["(^^)", "^_^"]);
+  assertEquals(withBang.get("!あせ"), ["^^;"]);
+  assertEquals(withBang.get("にこ"), ["(^^)", "^_^"]);
+  assertEquals(withBang.size, 4);
+  // the original map is not modified
+  assertEquals([...original.keys()], ["にこ", "あせ"]);
+});
+
+Deno.test("!-prefixed headwords sort before hiragana in both versions (ADR 0005)", () => {
+  const e = withBangHeadwords(new Map([["にこ", ["A"]], ["あせ", ["B"]]]));
+  const body = (text: string) => text.split(";; okuri-nasi entries.\n")[1];
+  assertEquals(
+    body(new TextDecoder().decode(renderUtf8(meta, e, 2))),
+    "!あせ /B/\n!にこ /A/\nあせ /B/\nにこ /A/\n",
+  );
+  assertEquals(
+    body(new TextDecoder("euc-jp").decode(renderEucJp(meta, e, 2))),
+    "!あせ /B/\n!にこ /A/\nあせ /B/\nにこ /A/\n",
+  );
+});
+
+Deno.test("isHeadword accepts !-prefixed headwords; normalizeReading does not (ADR 0005)", () => {
+  assertEquals(isHeadword("!にこにこ"), true);
+  assertEquals(isHeadword("にこにこ"), true);
+  assertEquals(isHeadword("!"), false);
+  assertEquals(isHeadword("!!にこ"), false);
+  assertEquals(isHeadword("！にこ"), false);
+  assertEquals(normalizeReading("!にこにこ"), undefined);
+});
+
+Deno.test("the header counts !-prefixed headwords (ADR 0005)", () => {
+  const e = withBangHeadwords(new Map([["にこ", ["A"]], ["あせ", ["B"]]]));
+  const text = new TextDecoder().decode(renderUtf8(meta, e, 2));
+  assertEquals(text.includes(";; 2 kaomoji, 4 readings.\n"), true);
 });
