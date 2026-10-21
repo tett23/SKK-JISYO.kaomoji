@@ -10,6 +10,7 @@
 | [ADR 0001](adr/0001-kaomoji-dictionary-from-mozc.md) | 採択 | Mozc の顔文字データから SKK 辞書を生成する |
 | [ADR 0002](adr/0002-check-dictionaries-with-ddskk.md) | 採択 | 生成した辞書を DDSKK で引いて検査し、EUC-JP の対応表の違いを直す（Docker の環境を含む） |
 | [ADR 0003](adr/0003-match-ddskk-check-to-real-lookups.md) | 採択 | DDSKK による検査を、DDSKK の実際の辞書の引き方に合わせる |
+| [ADR 0004](adr/0004-import-kaomoji-data-and-emoticon.md) | 採択 | kaomoji-data と tiwanari/emoticon の顔文字を取り込む（未実装） |
 
 ## 配布物
 
