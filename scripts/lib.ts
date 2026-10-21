@@ -5,7 +5,7 @@
 
 export type Kaomoji = { kaomoji: string; readings: string[] };
 export type Meta = { version: string; mozcCommit: string };
-export type SourcesLock = { mozcCommit: string; files: Map<string, string> };
+export type SourcesLock = { mozcCommit: string; ddskkCommit: string; files: Map<string, string> };
 
 // ---------------------------------------------------------------- 入力の解析
 
@@ -29,12 +29,13 @@ export const parseExtra = (tsv: string): Kaomoji[] =>
   rows(tsv).map((l) => l.split("\t")).filter(([k]) => k)
     .map(([kaomoji, readings]) => ({ kaomoji: kaomoji!, readings: splitReadings(readings) }));
 
-/** `key = value` の行。`mozc_commit` 以外のキーはファイルのパスで、値は SHA-256。 */
+/** `key = value` の行。`mozc_commit` と `ddskk_commit` 以外のキーは Mozc のファイルのパスで、値は SHA-256。 */
 export function parseSourcesLock(text: string): SourcesLock {
   const pairs = rows(text).map((l) => l.split("=").map((s) => s.trim()) as [string, string]);
   return {
     mozcCommit: pairs.find(([k]) => k === "mozc_commit")?.[1] ?? "",
-    files: new Map(pairs.filter(([k]) => k !== "mozc_commit")),
+    ddskkCommit: pairs.find(([k]) => k === "ddskk_commit")?.[1] ?? "",
+    files: new Map(pairs.filter(([k]) => !k.endsWith("_commit"))),
   };
 }
 
@@ -105,6 +106,26 @@ function buildTable(): Map<string, Uint8Array> {
   return t;
 }
 
+/** EUC-JP の対応表の全符号位置（バイト列と文字）。JIS X 0208 の標準の区と JIS X 0201 のカナ。 */
+export function eucJpTable(): [Uint8Array, string][] {
+  table ??= buildTable();
+  return [...table].map(([c, bytes]) => [bytes, c]);
+}
+
+/**
+ * Deno（WHATWG）と Emacs とで、同じ EUC-JP のバイト列に違う文字を当てる 7 文字（ADR 0002）。
+ * EUC-JP 版では、これらを EUC-JP で表せない文字と同じに扱い、\uXXXX で書く。
+ */
+export const EMACS_MISMATCH: ReadonlySet<string> = new Set([
+  "\u2015", // ― 水平線（Emacs は — U+2014）
+  "\uFF5E", // ～ 全角チルダ（Emacs は 〜 U+301C）
+  "\u2225", // ∥ 平行記号（Emacs は ‖ U+2016）
+  "\uFF0D", // － 全角ハイフンマイナス（Emacs は − U+2212）
+  "\uFFE0", // ￠ 全角セント記号（Emacs は ¢ U+00A2）
+  "\uFFE1", // ￡ 全角ポンド記号（Emacs は £ U+00A3）
+  "\uFFE2", // ￢ 全角否定記号（Emacs は ¬ U+00AC）
+]);
+
 function charBytes(c: string): Uint8Array | undefined {
   const cp = c.codePointAt(0)!;
   if (cp < 0x80) return new Uint8Array([cp]);
@@ -160,10 +181,13 @@ const lispCharEscape = (c: string) => {
   return cp > 0xffff ? `\\U${cp.toString(16).toUpperCase().padStart(8, "0")}` : uEscape(c);
 };
 
+/** EUC-JP 版でそのまま書ける文字か。Emacs と対応表が違う 7 文字は書けないものとして扱う（ADR 0002）。 */
+const isEucJpSafe = (c: string) => isEucJpEncodable(c) && !EMACS_MISMATCH.has(c);
+
 export const candidateEucJp = (s: string) =>
-  isEucJpEncodable(s)
+  [...s].every(isEucJpSafe)
     ? candidateUtf8(s)
-    : `(concat "${lispString(s, (c) => isEucJpEncodable(c) ? undefined : lispCharEscape(c))}")`;
+    : `(concat "${lispString(s, (c) => isEucJpSafe(c) ? undefined : lispCharEscape(c))}")`;
 
 // ---------------------------------------------------------------- 辞書の出力
 
@@ -240,7 +264,8 @@ export function renderUtf8(meta: Meta, entries: Entries, kaomojiCount: number): 
 
 export function renderEucJp(meta: Meta, entries: Entries, kaomojiCount: number): Uint8Array {
   const body = sortedBy(entries, encodeEucJp).map((r) => line(r, entries.get(r)!, candidateEucJp));
-  const note = `EUC-JP version: kaomoji with characters outside JIS X 0208 are (concat "\\uXXXX") forms for DDSKK.`;
+  const note = `EUC-JP version: kaomoji with characters outside JIS X 0208, or with characters that Emacs
+;; decodes differently (U+2015 U+2225 U+FF0D U+FF5E U+FFE0 U+FFE1 U+FFE2), are (concat "\\uXXXX") forms for DDSKK.`;
   return encodeEucJp(
     header(meta, EUC_JP_FILE, "euc-jp", kaomojiCount, entries.size, note) + body.map((l) => l + "\n").join(""),
   );
