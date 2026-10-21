@@ -13,6 +13,7 @@
 | [ADR 0004](adr/0004-import-kaomoji-data-and-emoticon.md) | 採択 | kaomoji-data と tiwanari/emoticon の顔文字を取り込む |
 | [ADR 0005](adr/0005-bang-prefixed-headwords.md) | 採択 | `!` を先頭に付けた見出し語で、顔文字だけを候補に出す |
 | [ADR 0006](adr/0006-unwrap-lisp-like-kaomoji-in-utf8.md) | 採択 | UTF-8 版では、DDSKK のためだけに `(concat "...")` で包まない |
+| [ADR 0007](adr/0007-update-adr-guard-to-v0.8.3.md) | 採択 | adr-guard を v0.8.3 に上げる |
 
 ## 配布物
 
@@ -160,6 +161,7 @@ AquaSKK は `(concat "...")` を評価しないので、UTF-8 版の `/` か `;`
 
 - ADR は `docs/adr/` に置き、ファイル名は 4 桁の連番と kebab-case の名前にする
 - ADR は作成時点ではコミットせず、人間のレビューを受けてから、ステータスを `採択` にしてコミットする
+- 採択したが、まだ実装していない ADR は、ステータスを `採択（未実装）` にする。`adr-guard unimplemented` で一覧できる（[ADR 0007](adr/0007-update-adr-guard-to-v0.8.3.md)）
 - 一度コミットした ADR は、ステータスの行とリンクを除いて変更しない。仕様を変える場合は新しい ADR を作る
 - ADR を破棄する場合は、ステータスを `破棄` にし、理由をこの文書に書く
 - [adr-guard](https://github.com/tett23/adr-guard) で、git の pre-commit hook（`.githooks/pre-commit`）と CI（`adr` ジョブ）の二か所で強制する
