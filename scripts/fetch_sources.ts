@@ -1,12 +1,12 @@
 /**
- * sources.lock に固定した Mozc のファイルを .cache/ に取得する（ADR 0001）。
+ * sources.lock に固定したファイルを .cache/<名前>/<コミット>/<パス> に取得する（ADR 0001、ADR 0004）。
  * 取得済みで SHA-256 が合えば取り直さない。合わなければ失敗する。
  */
-import { parseSourcesLock } from "./lib.ts";
+import { parseSourcesLock, SOURCES } from "./lib.ts";
 
 export const CACHE = ".cache";
 
-export const cachePath = (commit: string, path: string) => `${CACHE}/mozc/${commit}/${path}`;
+export const cachePath = (source: string, commit: string, path: string) => `${CACHE}/${source}/${commit}/${path}`;
 
 export async function sha256(bytes: Uint8Array): Promise<string> {
   const digest = await crypto.subtle.digest("SHA-256", bytes as Uint8Array<ArrayBuffer>);
@@ -24,11 +24,13 @@ async function readIfExists(path: string): Promise<Uint8Array | undefined> {
 
 if (import.meta.main) {
   const lock = parseSourcesLock(await Deno.readTextFile("sources.lock"));
-  for (const [path, hash] of lock.files) {
-    const local = cachePath(lock.mozcCommit, path);
+  for (const { source, path, sha256: hash } of lock.files) {
+    const commit = lock.commits[source];
+    if (!commit) throw new Error(`${source}_commit is not in sources.lock`);
+    const local = cachePath(source, commit, path);
     const cached = await readIfExists(local);
     if (cached && await sha256(cached) === hash) continue;
-    const url = `https://raw.githubusercontent.com/google/mozc/${lock.mozcCommit}/${path}`;
+    const url = `https://raw.githubusercontent.com/${SOURCES[source]}/${commit}/${path}`;
     const res = await fetch(url);
     if (!res.ok) throw new Error(`${url}: ${res.status} ${res.statusText}`);
     const bytes = new Uint8Array(await res.arrayBuffer());

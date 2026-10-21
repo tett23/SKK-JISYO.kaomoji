@@ -10,38 +10,55 @@
 | [ADR 0001](adr/0001-kaomoji-dictionary-from-mozc.md) | 採択 | Mozc の顔文字データから SKK 辞書を生成する |
 | [ADR 0002](adr/0002-check-dictionaries-with-ddskk.md) | 採択 | 生成した辞書を DDSKK で引いて検査し、EUC-JP の対応表の違いを直す（Docker の環境を含む） |
 | [ADR 0003](adr/0003-match-ddskk-check-to-real-lookups.md) | 採択 | DDSKK による検査を、DDSKK の実際の辞書の引き方に合わせる |
-| [ADR 0004](adr/0004-import-kaomoji-data-and-emoticon.md) | 採択 | kaomoji-data と tiwanari/emoticon の顔文字を取り込む（未実装） |
+| [ADR 0004](adr/0004-import-kaomoji-data-and-emoticon.md) | 採択 | kaomoji-data と tiwanari/emoticon の顔文字を取り込む |
 
 ## 配布物
 
-[ADR 0001](adr/0001-kaomoji-dictionary-from-mozc.md) による。
+[ADR 0001](adr/0001-kaomoji-dictionary-from-mozc.md)、[ADR 0004](adr/0004-import-kaomoji-data-and-emoticon.md) による。
 
 | ファイル | 文字コード | 候補の書き方 |
 |---|---|---|
 | `SKK-JISYO.kaomoji` | EUC-JP | 顔文字そのもの。JIS X 0208 にない文字を含む顔文字は `(concat "\uXXXX")` の式（DDSKK 専用） |
-| `SKK-JISYO.kaomoji.utf8` | UTF-8 | 顔文字そのもの |
+| `SKK-JISYO.kaomoji.utf8` | UTF-8 | 顔文字そのもの。DDSKK 以外の実装向け（「DDSKK と UTF-8 版」） |
 | `LICENSE` | | この辞書のライセンス（MIT License） |
 | `LICENSE-Mozc.txt` | | Mozc のライセンス（BSD 3-Clause License） |
-| `SHA256SUMS` | | 上の 4 つの SHA-256（リリースにだけ添付） |
+| `LICENSE-kaomoji-data.txt` | | kaomojikan/kaomoji-data のライセンス（MIT License） |
+| `LICENSE-emoticon.txt` | | tiwanari/emoticon のライセンス（MIT License） |
+| `SHA256SUMS` | | 上の 6 つの SHA-256（リリースにだけ添付） |
+
+`LICENSE-kaomoji-data.txt` と `LICENSE-emoticon.txt` は、`sources.lock` で固定したコミットの `LICENSE`、`LICENSE.md` に手を加えず、冒頭に出典の段落を足したものである。
+辞書のヘッダーにも、3 つのデータの出典（リポジトリとコミット）とライセンスの全文を書く。EUC-JP 版のヘッダーでは、EUC-JP で表せない文字を書きかえる（`©` は `(c)`、そのほかは `U+XXXX`）
 
 ## データの出典
 
-- Mozc の `src/data/emoticon/emoticon.tsv` と `src/data/emoticon/categorized.tsv`
-- 参照する Mozc のコミットと、2 つのファイルの SHA-256 は `sources.lock` に固定する
-- `deno task fetch`（`deno task build` の依存タスク）が `.cache/mozc/<コミット>/` に取得する。SHA-256 が合わなければ失敗する
+[ADR 0004](adr/0004-import-kaomoji-data-and-emoticon.md) による。
+
+| 名前 | リポジトリ | 使うファイル | 使う項目 |
+|---|---|---|---|
+| `mozc` | google/mozc | `src/data/emoticon/emoticon.tsv`、`categorized.tsv` | 顔文字と読み |
+| `kaomoji_data` | kaomojikan/kaomoji-data | `kaomoji.json`、`LICENSE` | 各要素の `text`（顔文字）と `reading`（読み）。`text` に改行かタブを含む要素（複数行のアスキーアート）は捨てる |
+| `emoticon` | tiwanari/emoticon | `source.txt`、`LICENSE.md` | タブ区切りの 1 列目（`@` を外して読み）と 2 列目（顔文字） |
+
+- 各リポジトリのコミットと、取得するファイルの SHA-256 を `sources.lock` に固定する。形式は、`<名前>_commit = <コミット>` と `<名前>:<パス> = <SHA-256>`
+- `deno task fetch`（`deno task build` の依存タスク）が `.cache/<名前>/<コミット>/<パス>` に取得する。SHA-256 が合わなければ失敗する
 - このリポジトリで足す顔文字は `data/extra.tsv` に書く。列はタブ区切りで、顔文字、読み（空白区切り）。`#` で始まる行はコメント
+- すべてのデータの顔文字について、前後の空白（半角と全角）を取り除いてから併合する
 
 ## 見出し語
 
 - Mozc の読みを、NFKC 正規化、カタカナからひらがなへの変換、`～`・`〜`・`~` から `ー` への変換、`・` の削除の順で正規化する
-- 正規化の後、ひらがなと `ー` だけの読みを見出し語にする。それ以外は警告を出して捨てる（`deno task build --strict` では失敗にする）
+- 正規化の後、ひらがなと `ー` だけの読みを見出し語にする。それ以外は警告を出して捨てる。
+  `deno task build --strict` は、`data/extra.tsv` の読みの警告だけを失敗にする。外部のデータの警告では失敗しない（[ADR 0004](adr/0004-import-kaomoji-data-and-emoticon.md)）
+- 読みが 1 つも残らなかった顔文字は、辞書に入らない。ヘッダーとリリースノートの顔文字の数は、辞書に入った顔文字の数である
 - 送り仮名のある見出し語、英字の見出し語は作らない
 
 ## 候補の並び順
 
 1. `data/extra.tsv` の行の順
-2. `emoticon.tsv` の行の順（Mozc がよく使う顔文字を前に置いた順）
-3. `categorized.tsv` にだけある顔文字の、ファイルの順
+2. Mozc の `emoticon.tsv` の行の順（Mozc がよく使う顔文字を前に置いた順）
+3. Mozc の `categorized.tsv` にだけある顔文字の、ファイルの順
+4. kaomoji-data の `kaomoji.json` の順
+5. tiwanari/emoticon の `source.txt` の順
 
 同じ顔文字が複数回現れたら最初の位置に 1 つにまとめ、読みは現れた順に和集合をとる。
 分類（SMILE など）は使わない。注釈は付けない。
@@ -77,8 +94,9 @@
 生成した 2 つの辞書を DDSKK で実際に引き、すべての見出し語について、候補が元の顔文字の並びと一致するかを確かめる。
 
 - 正解のデータ: `deno task expected` が `.cache/check/expected.tsv` を作る。列はタブ区切りの「見出し語」「候補 1」「候補 2」…で、候補は `(concat "...")` にする前の顔文字そのもの。行は見出し語の UTF-8 のバイト列の昇順
-- 引く検査: `scripts/check_ddskk.el` の `kaomoji-check` が、Emacs のバッチモードで DDSKK の `skk-search-jisyo-file` を `limit` 10000 で呼び、返った候補を `skk-eval-string` に通して正解と比べる。
-  10000 は、DDSKK が主辞書と `skk-extra-jisyo-file-list` の辞書を引くときの値である。
+- 引く検査: `scripts/check_ddskk.el` の `kaomoji-check` が、Emacs のバッチモードで DDSKK の `skk-search-jisyo-file` を呼び、返った候補を `skk-eval-string` に通して正解と比べる。
+  EUC-JP 版は `limit` 10000 で引く。10000 は、DDSKK が主辞書と `skk-extra-jisyo-file-list` の辞書を引くときの値である。
+  UTF-8 版は `limit` 0（線形探索だけ）で引き、候補の中身だけを確かめる（「DDSKK と UTF-8 版」、[ADR 0004](adr/0004-import-kaomoji-data-and-emoticon.md)）。
   辞書の okuri-nasi の見出し語の数が正解の行の数と一致するかも比べる。EUC-JP 版は `euc-jp`、UTF-8 版は `utf-8` で読む。
   DDSKK が文字コードを指定しない辞書に使う `euc-jis-2004` でも、この辞書の文字はすべて `euc-jp` と同じ文字として読まれる（2026-10-21 に 6,942 か所で確かめた）
 - 並び順の検査: `kaomoji-check-order` が、見出し語の隣り合う 2 つが昇順かを確かめる。EUC-JP 版は DDSKK の `skk-string<` で、UTF-8 版は UTF-8 のバイト列で比べる。
@@ -93,6 +111,14 @@
   - イメージにはリポジトリのファイルを入れず、実行するときにマウントする。レジストリには公開しない
 - 実行: `scripts/check_ddskk_docker.sh` がイメージを作り、実行した利用者の ID でコンテナの中の `scripts/check_ddskk.sh` を実行する。手元でも CI でもこのスクリプトを使う
 - CI の `ddskk` ジョブと、リリースのワークフローで実行する。リリースでは失敗したら公開しない
+
+## DDSKK と UTF-8 版
+
+[ADR 0004](adr/0004-import-kaomoji-data-and-emoticon.md) による。
+
+- DDSKK では EUC-JP 版を使う
+- UTF-8 版は、libskk（fcitx5-skk、ibus-skk）の二分探索のために UTF-8 のバイト順に並べる。日本語の言語環境の DDSKK の比べ方（EUC-JP の順）とは、`ー` とひらがなの前後が逆になる
+- このため、UTF-8 版を DDSKK で使うと、`ー` を含む見出し語の一部が引けない（2026-10-21 の辞書で `えー`、`しーん` など 8 件）
 
 ## リリース
 
@@ -127,10 +153,11 @@
 | パス | 内容 |
 |---|---|
 | `data/extra.tsv` | このリポジトリで足す顔文字 |
-| `sources.lock` | Mozc のコミットと、取得するファイルの SHA-256。DDSKK のコミット（[ADR 0002](adr/0002-check-dictionaries-with-ddskk.md)） |
+| `sources.lock` | 取り込むデータのコミットと、取得するファイルの SHA-256（[ADR 0004](adr/0004-import-kaomoji-data-and-emoticon.md)）。DDSKK のコミット（[ADR 0002](adr/0002-check-dictionaries-with-ddskk.md)） |
 | `VERSION` | 版 |
 | `scripts/lib.ts` | 解析、正規化、候補の集め方、EUC-JP の符号化、辞書の出力（純粋な関数） |
-| `scripts/fetch_sources.ts` | Mozc のファイルの取得 |
+| `scripts/fetch_sources.ts` | 取り込むデータの取得 |
+| `scripts/sources.ts` | 取り込むデータの読み込みと出典（[ADR 0004](adr/0004-import-kaomoji-data-and-emoticon.md)） |
 | `scripts/build.ts` | 辞書とライセンスファイルの生成 |
 | `scripts/release_notes.ts` | リリースノートの生成 |
 | `scripts/expected.ts` | DDSKK による検査の正解のデータの生成（[ADR 0002](adr/0002-check-dictionaries-with-ddskk.md)） |

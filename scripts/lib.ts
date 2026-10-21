@@ -1,11 +1,28 @@
 /**
- * 顔文字の SKK 辞書を作るための純粋な関数（ADR 0001）。
+ * 顔文字の SKK 辞書を作るための純粋な関数（ADR 0001、ADR 0004）。
  * ファイルやネットワークの入出力は scripts/*.ts の import.meta.main の中だけで行う。
  */
 
 export type Kaomoji = { kaomoji: string; readings: string[] };
-export type Meta = { version: string; mozcCommit: string };
-export type SourcesLock = { mozcCommit: string; ddskkCommit: string; files: Map<string, string> };
+/** 取り込むデータの名前とリポジトリ（ADR 0004）。 */
+export const SOURCES = {
+  mozc: "google/mozc",
+  kaomoji_data: "kaomojikan/kaomoji-data",
+  emoticon: "tiwanari/emoticon",
+} as const;
+export type SourceName = keyof typeof SOURCES;
+const isSourceName = (s: string): s is SourceName => Object.hasOwn(SOURCES, s);
+
+/** 辞書のヘッダーに書く、取り込んだデータの出典とライセンス。 */
+export type Credit = { repo: string; files: string; commit: string; license: string };
+export type Meta = { version: string; credits: Credit[] };
+
+export type LockedFile = { source: SourceName; path: string; sha256: string };
+/** commits は `<名前>_commit` の値（取り込むデータと ddskk）。files は `<名前>:<パス> = SHA-256`。 */
+export type SourcesLock = { commits: Record<string, string>; files: LockedFile[] };
+
+/** 候補の並びの順に並べた、取り込むデータ。own はこのリポジトリで書くデータ（--strict の対象）。 */
+export type Source = { name: string; own: boolean; kaomoji: Kaomoji[] };
 
 // ---------------------------------------------------------------- 入力の解析
 
@@ -29,14 +46,37 @@ export const parseExtra = (tsv: string): Kaomoji[] =>
   rows(tsv).map((l) => l.split("\t")).filter(([k]) => k)
     .map(([kaomoji, readings]) => ({ kaomoji: kaomoji!, readings: splitReadings(readings) }));
 
-/** `key = value` の行。`mozc_commit` と `ddskk_commit` 以外のキーは Mozc のファイルのパスで、値は SHA-256。 */
+/** kaomoji-data の kaomoji.json。text と reading を使い、改行かタブを含む text（複数行の AA）は捨てる。 */
+export const parseKaomojiData = (json: string): Kaomoji[] =>
+  (JSON.parse(json) as { text: string; reading?: string[] }[])
+    .filter(({ text }) => !/[\n\t]/.test(text))
+    .map(({ text, reading }) => ({ kaomoji: text, readings: reading ?? [] }));
+
+/** tiwanari/emoticon の source.txt。列は `@読み`、顔文字、品詞。 */
+export const parseEmoticonSource = (tsv: string): Kaomoji[] =>
+  rows(tsv).map((l) => l.split("\t")).filter(([, k]) => k)
+    .map(([reading, kaomoji]) => ({ kaomoji: kaomoji!, readings: [reading!.replace(/^@/, "")] }));
+
+/** `key = value` の行。`<名前>_commit` はコミット、`<名前>:<パス>` はファイルの SHA-256。 */
 export function parseSourcesLock(text: string): SourcesLock {
-  const pairs = rows(text).map((l) => l.split("=").map((s) => s.trim()) as [string, string]);
-  return {
-    mozcCommit: pairs.find(([k]) => k === "mozc_commit")?.[1] ?? "",
-    ddskkCommit: pairs.find(([k]) => k === "ddskk_commit")?.[1] ?? "",
-    files: new Map(pairs.filter(([k]) => !k.endsWith("_commit"))),
-  };
+  const pairs = rows(text).map((l) => {
+    const i = l.indexOf("=");
+    return [l.slice(0, i).trim(), l.slice(i + 1).trim()] as const;
+  });
+  const commits = Object.fromEntries(
+    pairs.filter(([k]) => k.endsWith("_commit")).map(([k, v]) => {
+      const name = k.slice(0, -"_commit".length);
+      if (!isSourceName(name) && name !== "ddskk") throw new Error(`unknown source in sources.lock: ${k}`);
+      return [name, v];
+    }),
+  );
+  const files = pairs.filter(([k]) => !k.endsWith("_commit")).map(([k, sha256]) => {
+    const i = k.indexOf(":");
+    const source = k.slice(0, i);
+    if (i < 0 || !isSourceName(source)) throw new Error(`unknown source in sources.lock: ${k}`);
+    return { source, path: k.slice(i + 1), sha256 };
+  });
+  return { commits, files };
 }
 
 // ---------------------------------------------------------------- 読み
@@ -62,23 +102,36 @@ export function mergeKaomoji(list: Kaomoji[]): Kaomoji[] {
 
 export type Entries = Map<string, string[]>;
 
-/** 見出し語 → 候補（並び順どおり）。並びは extra、emoticon、categorized の順。 */
-export function buildEntries(src: { extra: Kaomoji[]; emoticon: Kaomoji[]; categorized: Kaomoji[] }) {
-  const all = mergeKaomoji([...src.extra, ...src.emoticon, ...src.categorized]);
+/**
+ * 見出し語 → 候補（並び順どおり）。候補はデータの並びの順（ADR 0004）。
+ * 顔文字の前後の空白を取り除いてから併合する。規則に合わない読みは警告にして捨て、
+ * own のデータのものだけを strictFailures にも入れる。kaomojiCount は辞書に入った顔文字の数。
+ */
+export function buildEntries(sources: Source[]) {
   const warnings: string[] = [];
+  const strictFailures: string[] = [];
+  const normalized = sources.flatMap(({ name, own, kaomoji: list }) =>
+    list.map(({ kaomoji, readings }) => {
+      const k = kaomoji.replace(/^\s+|\s+$/g, "");
+      const valid = readings.flatMap((raw) => {
+        const r = normalizeReading(raw);
+        if (r) return [r];
+        const w = `invalid reading ${JSON.stringify(raw)} (${name}): ${k}`;
+        warnings.push(w);
+        if (own) strictFailures.push(w);
+        return [];
+      });
+      return { kaomoji: k, readings: valid };
+    })
+  );
   const entries: Entries = new Map();
-  for (const { kaomoji, readings } of all) {
-    for (const raw of readings) {
-      const r = normalizeReading(raw);
-      if (!r) {
-        warnings.push(`invalid reading ${JSON.stringify(raw)}: ${kaomoji}`);
-        continue;
-      }
+  for (const { kaomoji, readings } of mergeKaomoji(normalized.filter(({ kaomoji }) => kaomoji !== ""))) {
+    for (const r of readings) {
       const cands = entries.get(r) ?? [];
       if (!cands.includes(kaomoji)) entries.set(r, [...cands, kaomoji]);
     }
   }
-  return { entries, warnings, kaomojiCount: all.length };
+  return { entries, warnings, strictFailures, kaomojiCount: new Set([...entries.values()].flat()).size };
 }
 
 // ---------------------------------------------------------------- EUC-JP
@@ -225,6 +278,16 @@ export const UTF8_FILE = "SKK-JISYO.kaomoji.utf8";
 
 const comment = (text: string) => text.split("\n").map((l) => `;; ${l}`.trimEnd()).join("\n");
 
+const creditComment = ({ repo, files, commit, license }: Credit) =>
+  `;; Kaomoji and readings are taken from https://github.com/${repo},
+;; ${files} at commit
+;; ${commit},
+;; distributed under the following license:
+;;
+${comment(license.trimEnd())}
+;;
+`;
+
 function header(meta: Meta, file: string, coding: string, kaomojiCount: number, readings: number, note: string) {
   return `;; -*- mode: fundamental; coding: ${coding} -*-
 ;; ${file} --- Japanese kaomoji (emoticon) dictionary for SKK
@@ -236,14 +299,7 @@ function header(meta: Meta, file: string, coding: string, kaomojiCount: number, 
 ;; Copyright (c) 2026 はちがつうまれ
 ;; Released under the MIT License. https://github.com/tett23/SKK-JISYO.kaomoji
 ;;
-;; Kaomoji and readings are taken from Mozc (https://github.com/google/mozc),
-;; src/data/emoticon/emoticon.tsv and categorized.tsv at commit
-;; ${meta.mozcCommit},
-;; distributed under the following license:
-;;
-${comment(MOZC_NOTICE)}
-;;
-;; okuri-ari entries.
+${meta.credits.map(creditComment).join("")};; okuri-ari entries.
 ;; okuri-nasi entries.
 `;
 }
@@ -262,11 +318,25 @@ export function renderUtf8(meta: Meta, entries: Entries, kaomojiCount: number): 
   );
 }
 
+/**
+ * EUC-JP 版のヘッダー（コメント）で、EUC-JP で表せない文字を書きかえる。
+ * 著作権表示の © は慣例どおり (c) にし、そのほかは U+XXXX と書く。
+ */
+export const eucJpComment = (text: string) =>
+  [...text].map((c) =>
+    c === "\u00A9"
+      ? "(c)"
+      : isEucJpEncodable(c)
+      ? c
+      : `U+${c.codePointAt(0)!.toString(16).toUpperCase().padStart(4, "0")}`
+  ).join("");
+
 export function renderEucJp(meta: Meta, entries: Entries, kaomojiCount: number): Uint8Array {
   const body = sortedBy(entries, encodeEucJp).map((r) => line(r, entries.get(r)!, candidateEucJp));
   const note = `EUC-JP version: kaomoji with characters outside JIS X 0208, or with characters that Emacs
 ;; decodes differently (U+2015 U+2225 U+FF0D U+FF5E U+FFE0 U+FFE1 U+FFE2), are (concat "\\uXXXX") forms for DDSKK.`;
   return encodeEucJp(
-    header(meta, EUC_JP_FILE, "euc-jp", kaomojiCount, entries.size, note) + body.map((l) => l + "\n").join(""),
+    eucJpComment(header(meta, EUC_JP_FILE, "euc-jp", kaomojiCount, entries.size, note)) +
+      body.map((l) => l + "\n").join(""),
   );
 }

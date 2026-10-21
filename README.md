@@ -1,12 +1,18 @@
 # SKK-JISYO.kaomoji
 
 顔文字を読みから変換できる SKK 辞書です。
-顔文字と読みは [Mozc](https://github.com/google/mozc)（Google 日本語入力のオープンソース版）のデータを使っています。
+約 2,200 件の顔文字を、約 570 の読みから変換できます。
+顔文字と読みは、次の 3 つの公開データを使っています（[ADR 0004](docs/adr/0004-import-kaomoji-data-and-emoticon.md)）。
+
+- [Mozc](https://github.com/google/mozc)（Google 日本語入力のオープンソース版）の顔文字のデータ
+- [kaomojikan/kaomoji-data](https://github.com/kaomojikan/kaomoji-data)（顔文字館のデータセット）
+- [tiwanari/emoticon](https://github.com/tiwanari/emoticon)（Google 日本語入力向けの顔文字辞書）
 
 ```
 しょぼーん → (´・ω・｀) (´・ω・`) (´・ω・｀)ｼｮﾎﾞｰﾝ …
 ぺこり     → m(_ _)m m(__)m (._.) …
 にこにこ   → ＼(^o^)／ (^o^) (^^) (*^^*) …
+もぐもぐ   → (๑´ڡ`๑) (´～｀)ﾓｸﾞﾓｸﾞ (＾ᴗ＾)🍰 …
 ```
 
 ## ダウンロード
@@ -15,10 +21,11 @@
 
 | ファイル | 文字コード | 候補の書き方 |
 |---|---|---|
-| `SKK-JISYO.kaomoji.utf8` | UTF-8 | 顔文字そのもの |
+| `SKK-JISYO.kaomoji.utf8` | UTF-8 | 顔文字そのもの。DDSKK 以外の実装向け |
 | `SKK-JISYO.kaomoji` | EUC-JP | 顔文字そのもの。JIS X 0208 にない文字や、Emacs が別の文字として読む 7 文字（`～`、`－`、`―` など）を含む顔文字は `(concat "\uXXXX")` の式 |
 
 - EUC-JP 版で式になっている顔文字（`•`、`๑`、`✧` などを含むもの）を変換できるのは DDSKK（Emacs）だけです。
+- DDSKK では EUC-JP 版を使ってください。
 - AquaSKK、macSKK、libskk、fcitx5-skk、skkeleton などでは UTF-8 版を使ってください。
 - `/`、`;` を含む顔文字と、`(^^)` のように `(` と ASCII の文字で始まり `)` で終わる顔文字は、`(concat "...")` の形で書いてあります。
   多くの SKK の実装は `concat` を解釈するので、変換の結果は顔文字そのものになります。
@@ -26,21 +33,20 @@
 ## 設定例（DDSKK）
 
 ```elisp
-;; EUC-JP 版
 (add-to-list 'skk-extra-jisyo-file-list "~/path/to/SKK-JISYO.kaomoji")
-;; UTF-8 版（文字コードを指定する）
-(add-to-list 'skk-extra-jisyo-file-list '("~/path/to/SKK-JISYO.kaomoji.utf8" . utf-8))
 ```
 
-DDSKK では EUC-JP 版を勧めます。
+DDSKK では EUC-JP 版を使ってください。
 UTF-8 版の見出し語は、libskk（fcitx5-skk、ibus-skk）に合わせて UTF-8 のバイト順に並べており、DDSKK が探すときの順とは違います。
-今の大きさなら DDSKK でも UTF-8 版の全件を引けることを、CI で確かめています（[ADR 0003](docs/adr/0003-match-ddskk-check-to-real-lookups.md)）。
+UTF-8 版を DDSKK で使うと、`えー`、`しーん` など `ー` を含む見出し語の一部が引けません（[ADR 0004](docs/adr/0004-import-kaomoji-data-and-emoticon.md)）。
 
 ## 候補の並び順
 
 1. `data/extra.tsv`（このリポジトリで足した顔文字）の順
 2. Mozc の `emoticon.tsv` の順（よく使う顔文字が前）
 3. Mozc の `categorized.tsv` にだけある顔文字の順
+4. kaomoji-data の `kaomoji.json` の順
+5. tiwanari/emoticon の `source.txt` の順
 
 注釈は付けていません。
 詳しい仕様は [docs/specifications.md](docs/specifications.md) にあります。
@@ -54,7 +60,7 @@ deno task build
 ```
 
 `dist/` に辞書ができます。
-Mozc のデータは `sources.lock` に固定したコミットから `.cache/` に取得します。
+取り込むデータは、`sources.lock` に固定したコミットから `.cache/` に取得します。
 `--strict` を付けると、捨てた読みがあるときに失敗します。
 
 ```bash
@@ -82,16 +88,21 @@ DDSKK_DIR=~/src/ddskk scripts/check_ddskk.sh
 `data/extra.tsv` に、顔文字と読み（ひらがなと「ー」、空白区切り）をタブ区切りで 1 行足します。
 ここに書いた顔文字は Mozc の顔文字より前の候補になります。
 
-### Mozc の更新
+### 取り込むデータの更新
 
-`sources.lock` の `mozc_commit` を新しいコミットにし、2 つのファイルの SHA-256 を書きかえます。
+`sources.lock` の `<名前>_commit` を新しいコミットにし、そのデータのファイルの SHA-256 を書きかえます。
+名前とリポジトリの対応は、`mozc` が google/mozc、`kaomoji_data` が kaomojikan/kaomoji-data、`emoticon` が tiwanari/emoticon です。
 
 ```bash
+repo=kaomojikan/kaomoji-data
 commit=<新しいコミット>
-for f in emoticon.tsv categorized.tsv; do
-  curl -fsSL "https://raw.githubusercontent.com/google/mozc/$commit/src/data/emoticon/$f" | shasum -a 256
+for f in kaomoji.json LICENSE; do
+  curl -fsSL "https://raw.githubusercontent.com/$repo/$commit/$f" | shasum -a 256
 done
 ```
+
+外部のデータの読みのうち、ひらがなと `ー` にならないものは、警告を出して捨てます。
+`deno task build --strict` でも失敗しないので、更新したときは標準エラーの警告を確かめてください。
 
 ## リリース
 
@@ -129,8 +140,12 @@ CI でも同じ検査をします（`.github/workflows/ci.yml` の `adr` ジョ�
 
 この辞書（生成スクリプト、`data/extra.tsv`）は [MIT License](LICENSE) です。
 
-顔文字と読みは Mozc の `src/data/emoticon/emoticon.tsv` と `categorized.tsv` に由来し、次のライセンス（BSD 3-Clause License）が適用されます。
-このライセンスは辞書ファイルのヘッダーにも含め、リリースには `LICENSE-Mozc.txt` として添付しています。
+顔文字と読みは、次の 3 つのデータに由来し、それぞれのライセンスが適用されます。
+各ライセンスは辞書ファイルのヘッダーにも含め、リリースには `LICENSE-Mozc.txt`、`LICENSE-kaomoji-data.txt`、`LICENSE-emoticon.txt` として添付しています。
+
+### Mozc
+
+Mozc の `src/data/emoticon/emoticon.tsv` と `categorized.tsv` に由来します。ライセンスは BSD 3-Clause License です。
 
 ```
 Copyright 2010-2018, Google Inc.
@@ -161,4 +176,64 @@ DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
 THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+```
+
+### kaomojikan/kaomoji-data
+
+[kaomojikan/kaomoji-data](https://github.com/kaomojikan/kaomoji-data) の `kaomoji.json` に由来します。ライセンスは MIT License です。
+
+```
+MIT License
+
+Copyright (c) 2026 kaomojikan
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
+
+### tiwanari/emoticon
+
+[tiwanari/emoticon](https://github.com/tiwanari/emoticon) の `source.txt` に由来します。ライセンスは MIT License です。
+
+```
+The MIT License (MIT)
+=====================
+
+Copyright © `2013` `Tatsuya Iwanari`
+
+Permission is hereby granted, free of charge, to any person
+obtaining a copy of this software and associated documentation
+files (the “Software”), to deal in the Software without
+restriction, including without limitation the rights to use,
+copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the
+Software is furnished to do so, subject to the following
+conditions:
+
+The above copyright notice and this permission notice shall be
+included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+OTHER DEALINGS IN THE SOFTWARE.
 ```

@@ -1,4 +1,4 @@
-import { assertEquals } from "@std/assert";
+import { assertEquals, assertThrows } from "@std/assert";
 import {
   buildEntries,
   candidateEucJp,
@@ -7,10 +7,13 @@ import {
   encodeEucJp,
   isEucJpEncodable,
   mergeKaomoji,
+  MOZC_NOTICE,
   normalizeReading,
   parseCategorized,
   parseEmoticon,
+  parseEmoticonSource,
   parseExtra,
+  parseKaomojiData,
   parseSourcesLock,
   renderEucJp,
   renderUtf8,
@@ -62,17 +65,75 @@ Deno.test("mergeKaomoji: first position wins, readings are unioned in order", ()
   );
 });
 
-Deno.test("buildEntries: extra, then emoticon order, then categorized-only; invalid readings warn", () => {
-  const { entries, warnings, kaomojiCount } = buildEntries({
-    extra: [{ kaomoji: "X", readings: ["にこ"] }],
-    emoticon: [{ kaomoji: "A", readings: ["にこ", "abc"] }, { kaomoji: "B", readings: ["にこ"] }],
-    categorized: [{ kaomoji: "C", readings: ["にこ"] }, { kaomoji: "A", readings: ["わーい"] }],
-  });
-  assertEquals(entries.get("にこ"), ["X", "A", "B", "C"]);
+const src = (name: string, own: boolean, kaomoji: { kaomoji: string; readings: string[] }[]) => ({
+  name,
+  own,
+  kaomoji,
+});
+
+Deno.test("buildEntries: sources keep their order; same kaomoji merge at the first position", () => {
+  const { entries, kaomojiCount } = buildEntries([
+    src("extra", true, [{ kaomoji: "X", readings: ["にこ"] }]),
+    src("mozc", false, [{ kaomoji: "A", readings: ["にこ"] }, { kaomoji: "B", readings: ["にこ"] }]),
+    src("mozc", false, [{ kaomoji: "C", readings: ["にこ"] }, { kaomoji: "A", readings: ["わーい"] }]),
+    src("kaomoji_data", false, [{ kaomoji: "D", readings: ["にこ"] }, { kaomoji: "B", readings: ["にこ"] }]),
+    src("emoticon", false, [{ kaomoji: "E", readings: ["にこ"] }]),
+  ]);
+  assertEquals(entries.get("にこ"), ["X", "A", "B", "C", "D", "E"]);
   assertEquals(entries.get("わーい"), ["A"]);
-  assertEquals(entries.has("abc"), false);
-  assertEquals(kaomojiCount, 4);
-  assertEquals(warnings, ['invalid reading "abc": A']);
+  assertEquals(kaomojiCount, 6);
+});
+
+Deno.test("buildEntries: leading and trailing spaces are trimmed before merging (ADR 0004)", () => {
+  const { entries } = buildEntries([
+    src("emoticon", false, [
+      { kaomoji: " (๑•ૅㅁ•๑)ぁ？", readings: ["あ"] },
+      { kaomoji: "(๑•ૅㅁ•๑)ぁ？　", readings: ["あれ"] },
+      { kaomoji: "m(_ _)m", readings: ["ぺこり"] },
+    ]),
+  ]);
+  assertEquals(entries.get("あ"), ["(๑•ૅㅁ•๑)ぁ？"]);
+  assertEquals(entries.get("あれ"), ["(๑•ૅㅁ•๑)ぁ？"]);
+  assertEquals(entries.get("ぺこり"), ["m(_ _)m"]);
+});
+
+Deno.test("buildEntries: invalid readings warn; only those in our own data fail --strict (ADR 0004)", () => {
+  const { entries, warnings, strictFailures, kaomojiCount } = buildEntries([
+    src("extra", true, [{ kaomoji: "X", readings: ["にこ", "abc"] }]),
+    src("emoticon", false, [{ kaomoji: "Y", readings: ["?"] }, { kaomoji: "Z", readings: ["にこ", "はぁ？"] }]),
+  ]);
+  assertEquals(entries.get("にこ"), ["X", "Z"]);
+  assertEquals(warnings, [
+    'invalid reading "abc" (extra): X',
+    'invalid reading "?" (emoticon): Y',
+    'invalid reading "はぁ？" (emoticon): Z',
+  ]);
+  assertEquals(strictFailures, ['invalid reading "abc" (extra): X']);
+  // Y has no reading left, so it is not in the dictionary and not counted
+  assertEquals(kaomojiCount, 2);
+});
+
+Deno.test("parseKaomojiData: text and reading; multi-line entries are dropped (ADR 0004)", () => {
+  const json = JSON.stringify([
+    {
+      text: "(◍•ᗜ•◍)",
+      slug: "ureshii-0001",
+      categories: ["ureshii"],
+      tags: ["笑顔"],
+      reading: ["うれしい", "にこにこ"],
+    },
+    { text: " /\\_/\\\n( o.o )", slug: "aa-0001", categories: ["aa"], tags: [], reading: ["ねこ"] },
+    { text: "a\tb", slug: "x", categories: [], tags: [], reading: ["たぶ"] },
+  ]);
+  assertEquals(parseKaomojiData(json), [{ kaomoji: "(◍•ᗜ•◍)", readings: ["うれしい", "にこにこ"] }]);
+});
+
+Deno.test("parseEmoticonSource: strips @ from the shortcut (ADR 0004)", () => {
+  const tsv = "@ありがとう\t(*ゝω・)ﾉ ｱﾘｶﾞ㌧♪\t顔文字\n\n@?\t（？〜？\t顔文字\n";
+  assertEquals(parseEmoticonSource(tsv), [
+    { kaomoji: "(*ゝω・)ﾉ ｱﾘｶﾞ㌧♪", readings: ["ありがとう"] },
+    { kaomoji: "（？〜？", readings: ["?"] },
+  ]);
 });
 
 Deno.test("candidateUtf8", () => {
@@ -125,14 +186,28 @@ Deno.test("EMACS_MISMATCH is exactly the seven characters", () => {
   );
 });
 
-const meta = { version: "0.1.0", mozcCommit: "0123456789abcdef0123456789abcdef01234567" };
+const KD_LICENSE = "MIT License\n\nCopyright (c) 2026 kaomojikan\n\nPermission is hereby granted";
+const EM_LICENSE = "The MIT License (MIT)\n=====================\n\nCopyright © `2013` `Tatsuya Iwanari`\n";
+const meta = {
+  version: "0.1.0",
+  credits: [
+    {
+      repo: "google/mozc",
+      files: "src/data/emoticon/emoticon.tsv and categorized.tsv",
+      commit: "0123456789abcdef0123456789abcdef01234567",
+      license: MOZC_NOTICE,
+    },
+    { repo: "kaomojikan/kaomoji-data", files: "kaomoji.json", commit: "1".repeat(40), license: KD_LICENSE },
+    { repo: "tiwanari/emoticon", files: "source.txt", commit: "2".repeat(40), license: EM_LICENSE },
+  ],
+};
 const entries = new Map([["にこ", ["(^^)", "^_^"]], ["ぴーす", ["(^^)v"]], ["てれ", ["•ω•"]]]);
 
 Deno.test("renderUtf8", () => {
   const text = new TextDecoder().decode(renderUtf8(meta, entries, 3));
   assertEquals(text.startsWith(";; -*- mode: fundamental; coding: utf-8 -*-\n"), true);
   assertEquals(text.includes(";; Version: 0.1.0\n"), true);
-  assertEquals(text.includes(meta.mozcCommit), true);
+  assertEquals(text.includes("0123456789abcdef0123456789abcdef01234567"), true);
   assertEquals(text.includes(";; Copyright 2010-2018, Google Inc.\n"), true);
   // UTF-8 byte order: ぴ(E381B4) < て(E381A6)? no: て < に < ぴ
   assertEquals(
@@ -154,19 +229,40 @@ Deno.test("renderEucJp: sorted by EUC-JP bytes (ー sorts before hiragana)", () 
   assertEquals(u.split(";; okuri-nasi entries.\n")[1], "ああ /B/\nあー /A/\nてれ /•ω•/\n");
 });
 
-Deno.test("parseSourcesLock", () => {
+Deno.test("headers carry every source's commit and license (ADR 0004)", () => {
+  const utf8 = new TextDecoder().decode(renderUtf8(meta, entries, 3));
+  const euc = new TextDecoder("euc-jp").decode(renderEucJp(meta, entries, 3));
+  assertEquals(utf8.includes(";; Copyright © `2013` `Tatsuya Iwanari`\n"), true);
+  // © is not in JIS X 0208, so the EUC-JP header writes it as (c)
+  assertEquals(euc.includes(";; Copyright (c) `2013` `Tatsuya Iwanari`\n"), true);
+  assertEquals(euc.includes("?"), false);
+  for (const text of [utf8, euc]) {
+    assertEquals(text.includes(";; Copyright (c) 2026 kaomojikan\n"), true);
+    assertEquals(text.includes("1".repeat(40)), true);
+    assertEquals(text.includes("2".repeat(40)), true);
+    assertEquals(text.includes("https://github.com/kaomojikan/kaomoji-data"), true);
+    assertEquals(text.includes("https://github.com/tiwanari/emoticon"), true);
+  }
+});
+
+Deno.test("parseSourcesLock: commits and <name>:<path> hashes (ADR 0004)", () => {
   const lock = `# comment
-mozc_commit = 0123456789abcdef0123456789abcdef01234567
-ddskk_commit = fedcba9876543210fedcba9876543210fedcba98
-src/data/emoticon/emoticon.tsv = ${"a".repeat(64)}
-src/data/emoticon/categorized.tsv = ${"b".repeat(64)}
+mozc_commit = ${"0".repeat(40)}
+kaomoji_data_commit = ${"1".repeat(40)}
+emoticon_commit = ${"2".repeat(40)}
+ddskk_commit = ${"3".repeat(40)}
+mozc:src/data/emoticon/emoticon.tsv = ${"a".repeat(64)}
+kaomoji_data:kaomoji.json = ${"b".repeat(64)}
+emoticon:LICENSE.md = ${"c".repeat(64)}
 `;
   assertEquals(parseSourcesLock(lock), {
-    mozcCommit: "0123456789abcdef0123456789abcdef01234567",
-    ddskkCommit: "fedcba9876543210fedcba9876543210fedcba98",
-    files: new Map([
-      ["src/data/emoticon/emoticon.tsv", "a".repeat(64)],
-      ["src/data/emoticon/categorized.tsv", "b".repeat(64)],
-    ]),
+    commits: { mozc: "0".repeat(40), kaomoji_data: "1".repeat(40), emoticon: "2".repeat(40), ddskk: "3".repeat(40) },
+    files: [
+      { source: "mozc", path: "src/data/emoticon/emoticon.tsv", sha256: "a".repeat(64) },
+      { source: "kaomoji_data", path: "kaomoji.json", sha256: "b".repeat(64) },
+      { source: "emoticon", path: "LICENSE.md", sha256: "c".repeat(64) },
+    ],
   });
+  assertThrows(() => parseSourcesLock(`unknown:x = ${"d".repeat(64)}\n`));
+  assertThrows(() => parseSourcesLock(`unknown_commit = ${"d".repeat(40)}\n`));
 });
