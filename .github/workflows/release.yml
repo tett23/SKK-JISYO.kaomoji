@@ -31,6 +31,8 @@ jobs:
 
       - run: deno task test
       - run: deno task build --strict
+      - name: Check the dictionaries with DDSKK (ADR 0002, ADR 0003)
+        run: scripts/check_ddskk_docker.sh
 
       - name: Checksums
         working-directory: dist
