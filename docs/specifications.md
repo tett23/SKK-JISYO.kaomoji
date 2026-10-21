@@ -12,6 +12,7 @@
 | [ADR 0003](adr/0003-match-ddskk-check-to-real-lookups.md) | 採択 | DDSKK による検査を、DDSKK の実際の辞書の引き方に合わせる |
 | [ADR 0004](adr/0004-import-kaomoji-data-and-emoticon.md) | 採択 | kaomoji-data と tiwanari/emoticon の顔文字を取り込む |
 | [ADR 0005](adr/0005-bang-prefixed-headwords.md) | 採択 | `!` を先頭に付けた見出し語で、顔文字だけを候補に出す |
+| [ADR 0006](adr/0006-unwrap-lisp-like-kaomoji-in-utf8.md) | 採択 | UTF-8 版では、DDSKK のためだけに `(concat "...")` で包まない（未実装） |
 
 ## 配布物
 
