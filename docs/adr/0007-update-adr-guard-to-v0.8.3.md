@@ -1,6 +1,6 @@
 # ADR 0007: adr-guard を v0.8.3 に上げる
 
-ステータス: 採択
+ステータス: 採択→adr-guard の版は [ADR 0008](0008-update-adr-guard-to-v0.10.0.md)
 
 ## 文脈
 
