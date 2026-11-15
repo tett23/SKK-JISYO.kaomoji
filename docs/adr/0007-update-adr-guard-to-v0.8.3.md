@@ -1,6 +1,6 @@
 # ADR 0007: adr-guard を v0.8.3 に上げる
 
-ステータス: 採択→adr-guard の版は [ADR 0008](0008-update-adr-guard-to-v0.10.0.md)
+Status: superseded [{"by":["docs/adr/0008-update-adr-guard-to-v0.10.0.md"],"part":"adr-guard の版"},{"part":"未実装の ADR のステータスの書き方","by":["docs/adr/0009-update-adr-guard-to-v0.13.1.md"]}]
 
 ## 文脈
 

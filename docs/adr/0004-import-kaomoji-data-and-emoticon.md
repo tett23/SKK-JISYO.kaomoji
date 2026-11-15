@@ -1,6 +1,6 @@
 # ADR 0004: kaomoji-data と tiwanari/emoticon の顔文字を取り込む
 
-ステータス: 採択
+Status: accepted
 
 ## 文脈
 

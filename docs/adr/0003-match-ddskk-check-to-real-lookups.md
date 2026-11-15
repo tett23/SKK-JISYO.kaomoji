@@ -1,6 +1,6 @@
 # ADR 0003: DDSKK による検査を、DDSKK の実際の辞書の引き方に合わせる
 
-ステータス: 採択→UTF-8 版を DDSKK で引く検査は [ADR 0004](0004-import-kaomoji-data-and-emoticon.md)
+Status: superseded [{"by":["docs/adr/0004-import-kaomoji-data-and-emoticon.md"],"part":"UTF-8 版を DDSKK で引く検査"}]
 
 ## 文脈
 
