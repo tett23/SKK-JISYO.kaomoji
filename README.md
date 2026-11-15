@@ -150,7 +150,7 @@ ADR で仕様が変わったら、同じ変更で `docs/specifications.md` と�
 
 ### 開発の準備
 
-コミット済みの ADR を守るため、[adr-guard](https://github.com/tett23/adr-guard)（v0.10.0）をインストールし
+コミット済みの ADR を守るため、[adr-guard](https://github.com/tett23/adr-guard)（v0.13.1）をインストールし
 （[インストール方法](https://github.com/tett23/adr-guard#インストール)）、clone ごとに git の hook を有効にします。
 
 ```bash
@@ -158,6 +158,8 @@ git config core.hooksPath .githooks
 ```
 
 CI でも同じ検査をします（`.github/workflows/ci.yml` の `adr` ジョブ）。
+どちらも、ADR のステータスの行の状態遷移を検査します。
+新しい ADR は、レビューを受けた後に `Status: proposed` でコミットし、次のコミットで `Status: accepted` か `Status: accepted-pending` にします。
 
 ## ライセンス
 

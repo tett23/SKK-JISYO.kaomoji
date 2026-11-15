@@ -7,14 +7,15 @@
 
 | ADR | ステータス | 内容 |
 |---|---|---|
-| [ADR 0001](adr/0001-kaomoji-dictionary-from-mozc.md) | 採択 | Mozc の顔文字データから SKK 辞書を生成する |
-| [ADR 0002](adr/0002-check-dictionaries-with-ddskk.md) | 採択 | 生成した辞書を DDSKK で引いて検査し、EUC-JP の対応表の違いを直す（Docker の環境を含む） |
-| [ADR 0003](adr/0003-match-ddskk-check-to-real-lookups.md) | 採択 | DDSKK による検査を、DDSKK の実際の辞書の引き方に合わせる |
-| [ADR 0004](adr/0004-import-kaomoji-data-and-emoticon.md) | 採択 | kaomoji-data と tiwanari/emoticon の顔文字を取り込む |
-| [ADR 0005](adr/0005-bang-prefixed-headwords.md) | 採択 | `!` を先頭に付けた見出し語で、顔文字だけを候補に出す |
-| [ADR 0006](adr/0006-unwrap-lisp-like-kaomoji-in-utf8.md) | 採択 | UTF-8 版では、DDSKK のためだけに `(concat "...")` で包まない |
-| [ADR 0007](adr/0007-update-adr-guard-to-v0.8.3.md) | 採択 | adr-guard を v0.8.3 に上げる |
-| [ADR 0008](adr/0008-update-adr-guard-to-v0.10.0.md) | 採択 | adr-guard を v0.10.0 に上げる |
+| [ADR 0001](adr/0001-kaomoji-dictionary-from-mozc.md) | `superseded`（EUC-JP 版の候補の書き方の一部は [ADR 0002](adr/0002-check-dictionaries-with-ddskk.md)、データの出典と候補の並び順は [ADR 0004](adr/0004-import-kaomoji-data-and-emoticon.md)、UTF-8 版の候補の書き方の一部は [ADR 0006](adr/0006-unwrap-lisp-like-kaomoji-in-utf8.md)、adr-guard の版は [ADR 0007](adr/0007-update-adr-guard-to-v0.8.3.md)、ADR を最初にコミットするときのステータスは [ADR 0009](adr/0009-update-adr-guard-to-v0.13.1.md)） | Mozc の顔文字データから SKK 辞書を生成する |
+| [ADR 0002](adr/0002-check-dictionaries-with-ddskk.md) | `superseded`（検索の上限と、並びを崩した辞書の確かめ方は [ADR 0003](adr/0003-match-ddskk-check-to-real-lookups.md)） | 生成した辞書を DDSKK で引いて検査し、EUC-JP の対応表の違いを直す（Docker の環境を含む） |
+| [ADR 0003](adr/0003-match-ddskk-check-to-real-lookups.md) | `superseded`（UTF-8 版を DDSKK で引く検査は [ADR 0004](adr/0004-import-kaomoji-data-and-emoticon.md)） | DDSKK による検査を、DDSKK の実際の辞書の引き方に合わせる |
+| [ADR 0004](adr/0004-import-kaomoji-data-and-emoticon.md) | `accepted` | kaomoji-data と tiwanari/emoticon の顔文字を取り込む |
+| [ADR 0005](adr/0005-bang-prefixed-headwords.md) | `accepted` | `!` を先頭に付けた見出し語で、顔文字だけを候補に出す |
+| [ADR 0006](adr/0006-unwrap-lisp-like-kaomoji-in-utf8.md) | `accepted` | UTF-8 版では、DDSKK のためだけに `(concat "...")` で包まない |
+| [ADR 0007](adr/0007-update-adr-guard-to-v0.8.3.md) | `superseded`（adr-guard の版は [ADR 0008](adr/0008-update-adr-guard-to-v0.10.0.md)、未実装の ADR のステータスの書き方は [ADR 0009](adr/0009-update-adr-guard-to-v0.13.1.md)） | adr-guard を v0.8.3 に上げる |
+| [ADR 0008](adr/0008-update-adr-guard-to-v0.10.0.md) | `superseded`（adr-guard の版は [ADR 0009](adr/0009-update-adr-guard-to-v0.13.1.md)） | adr-guard を v0.10.0 に上げる |
+| [ADR 0009](adr/0009-update-adr-guard-to-v0.13.1.md) | `accepted` | adr-guard を v0.13.1 に上げ、ADR のステータスの行を新形式に移す |
 
 ## 配布物
 
@@ -161,11 +162,14 @@ AquaSKK は `(concat "...")` を評価しないので、UTF-8 版の `/` か `;`
 ## ADR の運用
 
 - ADR は `docs/adr/` に置き、ファイル名は 4 桁の連番と kebab-case の名前にする
-- ADR は作成時点ではコミットせず、人間のレビューを受けてから、ステータスを `採択` にしてコミットする
-- 採択したが、まだ実装していない ADR は、ステータスを `採択（未実装）` にする。`adr-guard unimplemented` で一覧できる（[ADR 0007](adr/0007-update-adr-guard-to-v0.8.3.md)）
+- ADR のステータスの行は、`Status: <トークン>` の形で書く。トークンは `proposed`、`accepted`、`accepted-pending`、`rejected`、`discarded`、`deprecated`、または `superseded [<変更の JSON 配列>]` である（[ADR 0009](adr/0009-update-adr-guard-to-v0.13.1.md)）
+- ADR は作成時点ではコミットせず、人間のレビューを受けてから、`Status: proposed` でコミットする。次のコミットで、ステータスを `accepted` か `accepted-pending` にする（[ADR 0009](adr/0009-update-adr-guard-to-v0.13.1.md)）
+- 採択したが、まだ実装していない ADR は、ステータスを `accepted-pending` にする。`adr-guard unimplemented` で一覧できる（[ADR 0007](adr/0007-update-adr-guard-to-v0.8.3.md)、[ADR 0009](adr/0009-update-adr-guard-to-v0.13.1.md)）
+- 後の ADR が一部を変えた ADR は、ステータスを `superseded [{"part":"<部分名>","by":["docs/adr/<後の ADR>.md"]}]` にする。部分名は、変えられた部分の名前である。修正の関係は `adr-guard trace` でたどれる
 - 一度コミットした ADR は、ステータスの行とリンクを除いて変更しない。仕様を変える場合は新しい ADR を作る
-- ADR を破棄する場合は、ステータスを `破棄` にし、理由をこの文書に書く
-- [adr-guard](https://github.com/tett23/adr-guard) で、git の pre-commit hook（`.githooks/pre-commit`）と CI（`adr` ジョブ）の二か所で強制する
+- ADR を破棄する場合は、ステータスを `discarded` にし、理由をこの文書に書く
+- [adr-guard](https://github.com/tett23/adr-guard) で、git の pre-commit hook（`.githooks/pre-commit`）と CI（`adr` ジョブ）の二か所で強制する。CI は `tett23/adr-guard@v0.13.1` を使う（[ADR 0009](adr/0009-update-adr-guard-to-v0.13.1.md)）
+- pre-commit hook と CI は、ステータスの行の状態遷移を検査する。許されない遷移（新しい ADR を `accepted` で足すなど）は、`--allow-status` を付けても通らない（[ADR 0009](adr/0009-update-adr-guard-to-v0.13.1.md)）
 - CI（`adr` ジョブ）は、同じディレクトリで ADR の番号が重複していないことも検査する（`adr-guard check-numbers`、[ADR 0008](adr/0008-update-adr-guard-to-v0.10.0.md)）
 - `ADR NNNN` の直前の語は、`/` や `-` を含むと修飾子（ADR のディレクトリやモジュール）として読まれ、対象が無いと検査に落ちる。ほかのリポジトリの ADR を参照するときは、修飾子ごと外部リンクのテキストに入れる（[ADR 0008](adr/0008-update-adr-guard-to-v0.10.0.md)）
 
