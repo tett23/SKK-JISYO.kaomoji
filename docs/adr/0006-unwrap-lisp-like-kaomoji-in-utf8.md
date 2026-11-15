@@ -1,6 +1,6 @@
 # ADR 0006: UTF-8 版では、DDSKK のためだけに `(concat "...")` で包まない
 
-ステータス: 採択
+Status: accepted
 
 ## 文脈
 

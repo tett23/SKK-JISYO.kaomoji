@@ -1,6 +1,6 @@
 # ADR 0001: Mozc の顔文字データから SKK 辞書を生成する
 
-ステータス: 採択→EUC-JP 版の候補の書き方の一部は [ADR 0002](0002-check-dictionaries-with-ddskk.md)、データの出典と候補の並び順は [ADR 0004](0004-import-kaomoji-data-and-emoticon.md)、UTF-8 版の候補の書き方の一部は [ADR 0006](0006-unwrap-lisp-like-kaomoji-in-utf8.md)、adr-guard の版は [ADR 0007](0007-update-adr-guard-to-v0.8.3.md)
+Status: superseded [{"by":["docs/adr/0002-check-dictionaries-with-ddskk.md"],"part":"EUC-JP 版の候補の書き方の一部"},{"by":["docs/adr/0004-import-kaomoji-data-and-emoticon.md"],"part":"データの出典と候補の並び順"},{"by":["docs/adr/0006-unwrap-lisp-like-kaomoji-in-utf8.md"],"part":"UTF-8 版の候補の書き方の一部"},{"by":["docs/adr/0007-update-adr-guard-to-v0.8.3.md"],"part":"adr-guard の版"}]
 
 ## 文脈
 

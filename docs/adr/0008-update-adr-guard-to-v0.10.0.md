@@ -1,6 +1,6 @@
 # ADR 0008: adr-guard を v0.10.0 に上げる
 
-ステータス: 採択
+Status: accepted
 
 ## 文脈
 
